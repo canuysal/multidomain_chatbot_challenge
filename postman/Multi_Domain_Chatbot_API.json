@@ -94,7 +94,7 @@
       "name": "City Information Tests",
       "item": [
         {
-          "name": "Ask about Paris",
+          "name": "Ask about Ankara",
           "request": {
             "method": "POST",
             "header": [
@@ -105,7 +105,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Tell me about Paris\"\n}"
+              "raw": "{\n    \"message\": \"Tell me about Ankara\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -165,7 +165,7 @@
       "name": "Weather Information Tests",
       "item": [
         {
-          "name": "Weather in London",
+          "name": "Weather in Ankara",
           "request": {
             "method": "POST",
             "header": [
@@ -176,7 +176,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"What's the weather like in London?\"\n}"
+              "raw": "{\n    \"message\": \"What's the weather like in Ankara?\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -385,6 +385,28 @@
             "body": {
               "mode": "raw",
               "raw": "{\n    \"message\": \"What programming books do you have?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cheapest phone in the store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"What is the cheapest phone in the store?\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
