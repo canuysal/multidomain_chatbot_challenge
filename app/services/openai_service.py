@@ -13,8 +13,10 @@ class OpenAIService:
     def __init__(self):
         settings = get_settings()
         self.client = OpenAI(api_key=settings.openai_api_key)
+        self.model = settings.default_model
         self.conversation_history: List[Dict[str, Any]] = []
         self.logger = get_logger('app.services.openai')
+        self.logger.info(f"🤖 OpenAI service initialized with model: {self.model}")
 
     def get_available_functions(self) -> Dict[str, Any]:
         """Define available functions for the AI to use"""
@@ -117,9 +119,9 @@ class OpenAIService:
             self.logger.debug(f"📤 Sending {len(messages)} messages to OpenAI")
 
             # Call OpenAI with function calling
-            self.logger.info("🤖 Calling OpenAI API for initial response")
+            self.logger.info(f"🤖 Calling OpenAI API ({self.model}) for initial response")
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model=self.model,
                 messages=messages,
                 functions=self.get_function_definitions(),
                 function_call="auto"
@@ -164,9 +166,9 @@ class OpenAIService:
                 })
 
                 # Get final response from AI
-                self.logger.info("🤖 Calling OpenAI API for final response")
+                self.logger.info(f"🤖 Calling OpenAI API ({self.model}) for final response")
                 final_response = self.client.chat.completions.create(
-                    model="gpt-4o",
+                    model=self.model,
                     messages=[system_message] + self.conversation_history
                 )
 
