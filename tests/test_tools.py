@@ -97,9 +97,8 @@ class TestWeatherTool:
         try:
             result = self.weather_tool.get_weather("London")
 
-            # Should return mock data when API key is test key
-            assert "Mock Data" in result
-            assert "London" in result
+            # Should return error when API key is test key for consistency
+            assert "Weather service authentication failed" in result
         finally:
             # Restore original key
             self.weather_tool.api_key = original_key
