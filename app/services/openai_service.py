@@ -111,7 +111,12 @@ class OpenAIService:
                 - Research topics and academic information
                 - Product searches from our database
 
-                Always greet users warmly and be helpful. Use the available functions when appropriate to provide accurate information."""
+                Always greet users warmly and be helpful. Use the available functions when appropriate to provide accurate information.
+                If you don't have the information, inform the user that you don't have the information and try to suggest other ways to get the information.
+                If the function returns an error, inform the user about the nature of the error, e.g. rate limit, timeout, internal server error, etc.
+                While using get_city_info function, add the url of the wikipedia page to response.
+                Do not use markdown formatting in the response.
+                """
             }
 
             # Prepare messages for OpenAI
@@ -147,7 +152,7 @@ class OpenAIService:
 
                 response_length = len(str(function_response))
                 log_tool_result(self.logger, "OpenAI", function_name, True, response_length)
-                self.logger.debug(f"🔧 Tool response preview: {str(function_response)[:200]}...")
+                self.logger.debug(f"🔧 Tool response: {str(function_response)}")
 
                 # Add function call and response to conversation
                 self.conversation_history.append({
