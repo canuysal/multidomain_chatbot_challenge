@@ -42,10 +42,11 @@ class WeatherTool(BaseTool):
 
             # Check if API key is available
             if not self.api_key or self.api_key == "test-weather-key":
-                self.logger.info("🔑 Using mock weather data (no API key configured)")
-                result = self._mock_weather_response(city_name)
-                log_request_end(self.logger, request_id, 200, {"mock_response": True})
-                return result
+                # self.logger.info("🔑 Using mock weather data (no API key configured)")
+                # result = self._mock_weather_response(city_name)
+                # log_request_end(self.logger, request_id, 200, {"mock_response": True})
+                # return result
+                return "Weather service authentication failed. Please check the API key configuration."
 
             # Make request to OpenWeatherMap API
             params = {
@@ -60,7 +61,7 @@ class WeatherTool(BaseTool):
 
             if response.status_code == 200:
                 data = response.json()
-                self.logger.info(f"✅ Successfully fetched weather data for {city_name}")
+                self.logger.info(f"✅ Successfully fetched weather data for {city_name} with response: {data}")
                 result = self._format_weather_response(data)
                 log_request_end(self.logger, request_id, 200, {"response_length": len(result)})
                 return result
