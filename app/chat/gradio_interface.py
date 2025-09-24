@@ -40,17 +40,47 @@ class ChatInterface:
         """Clear both Gradio and OpenAI conversation history"""
         self.logger.info("🧹 Gradio chat clear requested")
         self.openai_service.clear_conversation()
-        self.logger.info("✅ Gradio chat cleared successfully")
-        return []
+
+        # Return welcome message when clearing chat
+        welcome_message = """👋 **Welcome back to the Multi-Domain AI Chatbot!**
+
+I'm ready to help you with:
+
+🏙️ **Cities** | 🌤️ **Weather** | 📚 **Research** | 🛍️ **Products**
+
+What would you like to know about today?"""
+
+        self.logger.info("✅ Gradio chat cleared successfully, showing welcome message")
+        return [(None, welcome_message)]
 
     def create_interface(self):
         """Create and return Gradio interface"""
+        self.logger.info("🎨 Creating Gradio chat interface with welcome message")
+
+        # Welcome message to display on page load
+        welcome_message = """👋 **Welcome to the Multi-Domain AI Chatbot!**
+
+I'm here to help you with information across multiple domains:
+
+🏙️ **Cities**: Ask me about any city worldwide - I'll fetch information from Wikipedia
+🌤️ **Weather**: Get current weather conditions for any location
+📚 **Research**: Search for academic papers and research on any topic
+🛍️ **Products**: Browse our product database and find items you're looking for
+
+**Try asking me:**
+- "Tell me about Paris"
+- "What's the weather like in Tokyo?"
+- "Find research papers about machine learning"
+- "Do you have any laptops for sale?"
+
+Feel free to ask me anything! I can handle multiple topics in a single conversation. 🚀"""
+
         with gr.Blocks(title="AI Chatbot", theme=gr.themes.Soft()) as interface:
             gr.Markdown("# 🤖 Multi-Domain AI Chatbot")
             gr.Markdown("Ask me about cities, weather, research topics, or products!")
 
             chatbot = gr.Chatbot(
-                value=[],
+                value=[(None, welcome_message)],  # Use None to avoid empty user bubble
                 elem_id="chatbot",
                 bubble_full_width=False,
                 height=500
