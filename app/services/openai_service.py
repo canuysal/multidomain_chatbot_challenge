@@ -56,7 +56,6 @@ class OpenAIService:
                 If you don't have the information, inform the user that you don't have the information and try to suggest other ways to get the information.
                 If the function returns an error, inform the user about the nature of the error, e.g. rate limit, timeout, internal server error, etc.
                 While using get_city_info function, add the url of the wikipedia page to response.
-                Do not use markdown formatting in the response.
                 """
             }
 
