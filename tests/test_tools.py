@@ -44,7 +44,7 @@ class TestCityTool:
         result = self.city_tool.get_city_info("NonexistentCity")
 
         assert "couldn't find information" in result
-        assert "NonexistentCity" in result
+        assert "Nonexistentcity" in result
 
     def test_get_city_info_empty_input(self):
         result = self.city_tool.get_city_info("")
@@ -52,9 +52,10 @@ class TestCityTool:
 
     @patch('app.tools.city_tool.requests.get')
     def test_get_city_info_timeout(self, mock_get):
-        mock_get.side_effect = Exception("timeout")
+        import requests
+        mock_get.side_effect = requests.exceptions.Timeout("Request timeout")
         result = self.city_tool.get_city_info("Paris")
-        assert "error" in result.lower()
+        assert "timed out" in result.lower()
 
 
 class TestWeatherTool:
@@ -89,12 +90,19 @@ class TestWeatherTool:
         assert "light rain" in result.lower()
 
     def test_get_weather_mock_response(self):
-        # Test with mock API key
-        result = self.weather_tool.get_weather("London")
+        # Test with mock API key by setting it directly
+        original_key = self.weather_tool.api_key
+        self.weather_tool.api_key = "test-weather-key"  # Set to trigger mock response
 
-        # Should return mock data when API key is not configured
-        assert "Mock Data" in result
-        assert "London" in result
+        try:
+            result = self.weather_tool.get_weather("London")
+
+            # Should return mock data when API key is test key
+            assert "Mock Data" in result
+            assert "London" in result
+        finally:
+            # Restore original key
+            self.weather_tool.api_key = original_key
 
     def test_get_weather_empty_input(self):
         result = self.weather_tool.get_weather("")

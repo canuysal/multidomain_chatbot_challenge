@@ -231,7 +231,12 @@ def log_error_with_context(logger: logging.Logger, error: Exception, context: st
         'context': context
     }
     if extra_data:
-        error_data.update(extra_data)
+        # Avoid conflicts with reserved logging fields
+        for key, value in extra_data.items():
+            if key not in ['message', 'asctime']:  # Reserved logging fields
+                error_data[key] = value
+            else:
+                error_data[f'user_{key}'] = value  # Prefix with 'user_' to avoid conflicts
 
     logger.error(f"💥 ERROR in {context}: {type(error).__name__}: {error}", extra=error_data)
 
