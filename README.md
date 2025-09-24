@@ -43,6 +43,11 @@ cd aifa_challenge
 
 2. **Install dependencies**
 ```bash
+conda create -n aifa_challenge python=3.12
+conda activate aifa_challenge
+```
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -54,9 +59,6 @@ cp .env.example .env
 
 4. **Setup database**
 ```bash
-# Start PostgreSQL and create database
-createdb chatbot_db
-
 # Bootstrap with sample data
 python database/bootstrap.py
 ```
