@@ -1,6 +1,6 @@
 # 🤖 Multi-Domain AI Chatbot
 
-A comprehensive AI-powered chatbot that handles multiple domains including city information, weather data, research papers, and product searches through intelligent function calling with OpenAI's GPT models.
+A comprehensive AI-powered chatbot that handles multiple domains including city information, weather data, research papers, and product searches through intelligent tool calling with OpenAI's GPT models.
 
 ## ✨ Features
 
@@ -10,18 +10,19 @@ A comprehensive AI-powered chatbot that handles multiple domains including city 
 - **Research Search**: Academic paper search using Semantic Scholar API
 - **Product Database**: PostgreSQL-powered product search and inventory
 
-### 🧠 AI-Powered Function Calling
+### 🧠 AI-Powered Tool Calling
 - **Automatic Domain Detection**: No explicit classification - AI determines which tool to use
 - **Conversational Context**: Maintains multi-turn conversation history
 - **Intelligent Responses**: Natural language processing with OpenAI GPT models
 - **Dynamic Tool Registry**: Automatic tool discovery and registration system
 - **Selective Tool Loading**: Configure active tools via environment variables
+- **Multi-Turn Tool Calling**: Tool results are fed back into the model until it's done
 
 ### 💻 Dual Interface
 - **Web UI**: Beautiful Gradio interface for interactive chat
 - **REST API**: Complete FastAPI implementation with OpenAPI documentation
 
-### 🛡️ Production Ready
+### 🛡️ Clone and Bootstrap Your Project
 - **Comprehensive Error Handling**: Graceful error recovery and user-friendly messages
 - **Robust Testing**: Unit tests for all components
 - **API Documentation**: Postman collection for testing and integration
@@ -33,14 +34,14 @@ A comprehensive AI-powered chatbot that handles multiple domains including city 
 - Python 3.12+
 - PostgreSQL 12+
 - OpenAI API Key
-- OpenWeatherMap API Key (optional for real weather data)
+- OpenWeatherMap API Key
 
 ### Installation
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
-cd aifa_challenge
+git clone https://github.com/canuysal/multidomain_chatbot_challenge
+cd multidomain_chatbot_challenge
 ```
 
 2. **Install dependencies**
@@ -187,6 +188,13 @@ curl -X POST "http://localhost:8000/api/chat" \
 
 ## 🧪 Testing
 
+### Postman Testing
+1. Import `postman/Multi_Domain_Chatbot_API.json`
+2. Run the collection to test all endpoints
+3. Includes load testing and error scenario validation
+
+Read more about Postman documentation [here](/postman)
+
 ### Run Unit Tests
 ```bash
 pytest tests/ -v
@@ -197,11 +205,6 @@ pytest tests/ -v
 - ✅ **API Endpoints**: All REST endpoints with error cases
 - ✅ **Error Handling**: Timeout, connection, validation errors
 - ✅ **Integration**: End-to-end conversation flows
-
-### Postman Testing
-1. Import `postman/Multi_Domain_Chatbot_API.json`
-2. Run the collection to test all endpoints
-3. Includes load testing and error scenario validation
 
 ## 🗄️ Database
 
@@ -273,27 +276,6 @@ export ACTIVE_TOOLS="product"
 export ACTIVE_TOOLS="research,city"
 ```
 
-## 🚀 Deployment
-
-### Production Checklist
-- [ ] Set production API keys
-- [ ] Configure production database
-- [ ] Set up SSL certificates
-- [ ] Configure reverse proxy (nginx)
-- [ ] Set up monitoring and logging
-- [ ] Configure backup strategy
-
-### Docker Support (Future Enhancement)
-```dockerfile
-# Future: Add Dockerfile for containerized deployment
-FROM python:3.9-slim
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 8000
-CMD ["python", "main.py"]
-```
-
 ## 🤝 Contributing
 
 ### Development Setup
@@ -354,34 +336,14 @@ CMD ["python", "main.py"]
 
 ## 🛠️ Troubleshooting
 
-### Common Issues
-
-**Database Connection Errors**
-```bash
-# Check PostgreSQL is running
-sudo systemctl status postgresql
-
-# Test connection
-psql -h localhost -U username -d chatbot_db
-```
-
-**API Key Issues**
-```bash
-# Verify environment variables
-echo $OPENAI_API_KEY
-echo $OPENWEATHERMAP_API_KEY
-```
-
-**Module Import Errors**
-```bash
-# Ensure all dependencies are installed
-pip install -r requirements.txt
-```
+- Run tests
+- Make sure API keys are valid
+- Make sure DB connection string is valid
 
 ### Debug Mode
 ```bash
-# Run with debug logging
-python main.py --log-level DEBUG
+# Run with debug logging, set it in the environment
+LOG_LEVEL=DEBUG
 ```
 
 ## 📄 License
@@ -405,4 +367,8 @@ This implementation demonstrates:
 - ✅ **User-friendly interfaces** (both web UI and REST API)
 - ✅ **Scalable database design** with sample data and management tools
 
-**Ready for production deployment and further enhancement!** 🚀
+## Limitations / TODO
+- No multi-tenancy / chat history is currently shared across clients.
+- No streaming - event handling can be tricky and out of scope for this proof of concept app.
+- Pytest coverage is not reviewed or validated yet
+- Semantic Scholar API is mostly rate limited without API keys, OpenAlex might be a good replacement.
