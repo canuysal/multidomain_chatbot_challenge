@@ -1,6 +1,7 @@
 import requests
 from typing import Optional, Dict, Any, List
 import json
+from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
 
 
 class ResearchTool:
@@ -9,6 +10,7 @@ class ResearchTool:
     def __init__(self):
         self.base_url = "https://api.semanticscholar.org/graph/v1"
         self.search_url = f"{self.base_url}/paper/search"
+        self.logger = get_logger('app.tools.research')
 
     def search_research(self, topic: str) -> str:
         """
@@ -20,11 +22,18 @@ class ResearchTool:
         Returns:
             str: Formatted research findings or error message
         """
+        request_id = log_request_start(self.logger, "GET", "Semantic Scholar API", {"topic": topic})
+
         try:
+            self.logger.info(f"📚 Searching research papers for topic: {topic}")
+
             if not topic or not topic.strip():
+                self.logger.warning("❌ Empty research topic provided")
+                log_request_end(self.logger, request_id, 400)
                 return "Please provide a valid research topic."
 
             topic = topic.strip()
+            self.logger.debug(f"🔍 Normalized topic: {topic}")
 
             # Make request to Semantic Scholar API
             params = {
@@ -37,34 +46,56 @@ class ResearchTool:
                 'User-Agent': 'MultiDomainChatbot/1.0 (research-assistant)',
             }
 
+            self.logger.debug(f"📡 Making request to: {self.search_url} with limit: {params['limit']}")
             response = requests.get(self.search_url, params=params, headers=headers, timeout=15)
+            self.logger.debug(f"📥 Semantic Scholar response: {response.status_code}")
 
             if response.status_code == 200:
                 data = response.json()
-                return self._format_research_response(data, topic)
+                paper_count = len(data.get('data', []))
+                self.logger.info(f"✅ Successfully fetched {paper_count} research papers for {topic}")
+                result = self._format_research_response(data, topic)
+                log_request_end(self.logger, request_id, 200, {"papers_found": paper_count, "response_length": len(result)})
+                return result
 
             elif response.status_code == 400:
+                self.logger.warning(f"❌ Invalid search query: {topic}")
+                log_request_end(self.logger, request_id, 400)
                 return f"Invalid search query for '{topic}'. Please try a different search term."
 
             elif response.status_code == 429:
+                self.logger.warning("⚠️ Semantic Scholar API rate limit exceeded")
+                log_request_end(self.logger, request_id, 429)
                 return "Research service is temporarily unavailable due to rate limiting. Please try again later."
 
             elif response.status_code == 500:
+                self.logger.error("❌ Semantic Scholar API server error")
+                log_request_end(self.logger, request_id, 500)
                 return "Research service is temporarily unavailable. Please try again later."
 
             else:
+                self.logger.error(f"❌ Semantic Scholar API error: {response.status_code}")
+                log_request_end(self.logger, request_id, response.status_code)
                 return f"Sorry, I encountered an error while searching for research on '{topic}'. Please try again later."
 
         except requests.exceptions.Timeout:
+            log_error_with_context(self.logger, Exception("Request timeout"), "Semantic Scholar API call", {"topic": topic})
+            log_request_end(self.logger, request_id, 408)
             return "The research request timed out. Please try again."
 
         except requests.exceptions.ConnectionError:
+            log_error_with_context(self.logger, Exception("Connection error"), "Semantic Scholar API call", {"topic": topic})
+            log_request_end(self.logger, request_id, 503)
             return "Unable to connect to the research service. Please check your internet connection."
 
         except requests.exceptions.RequestException as e:
+            log_error_with_context(self.logger, e, "Semantic Scholar API request", {"topic": topic})
+            log_request_end(self.logger, request_id, 500)
             return f"An error occurred while searching for research: {str(e)}"
 
         except Exception as e:
+            log_error_with_context(self.logger, e, "research_processing", {"topic": topic})
+            log_request_end(self.logger, request_id, 500)
             return f"An unexpected error occurred: {str(e)}"
 
     def _format_research_response(self, data: Dict[Any, Any], topic: str) -> str:

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from app.core.database import SessionLocal
 from app.models.product import Product
+from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
 from decimal import Decimal
 
 
@@ -10,7 +11,7 @@ class ProductTool:
     """Tool for searching products in the database"""
 
     def __init__(self):
-        pass
+        self.logger = get_logger('app.tools.product')
 
     def find_products(self, query: str) -> str:
         """
@@ -22,13 +23,21 @@ class ProductTool:
         Returns:
             str: Formatted product search results or error message
         """
+        request_id = log_request_start(self.logger, "QUERY", "Product Database", {"query": query})
+
         try:
+            self.logger.info(f"🛍️ Searching products for query: {query}")
+
             if not query or not query.strip():
+                self.logger.warning("❌ Empty product search query provided")
+                log_request_end(self.logger, request_id, 400)
                 return "Please provide a search term for products."
 
             query = query.strip().lower()
+            self.logger.debug(f"🔍 Normalized query: {query}")
 
             # Get database session
+            self.logger.debug("📊 Opening database session")
             db = SessionLocal()
 
             try:
@@ -40,17 +49,28 @@ class ProductTool:
                     Product.brand.ilike(f"%{query}%")
                 )
 
+                self.logger.debug("🔎 Executing product search query")
                 products = db.query(Product).filter(search_filter).limit(10).all()
 
+                product_count = len(products)
+                self.logger.info(f"✅ Found {product_count} products matching '{query}'")
+
                 if not products:
+                    self.logger.info(f"❌ No products found for query: {query}")
+                    log_request_end(self.logger, request_id, 200, {"products_found": 0})
                     return f"No products found matching '{query}'. Try searching with different keywords."
 
-                return self._format_product_results(products, query)
+                result = self._format_product_results(products, query)
+                log_request_end(self.logger, request_id, 200, {"products_found": product_count, "response_length": len(result)})
+                return result
 
             finally:
                 db.close()
+                self.logger.debug("📊 Database session closed")
 
         except Exception as e:
+            log_error_with_context(self.logger, e, "product_search", {"query": query})
+            log_request_end(self.logger, request_id, 500)
             return f"An error occurred while searching for products: {str(e)}"
 
     def get_product_by_id(self, product_id: int) -> str:

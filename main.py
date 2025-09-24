@@ -3,7 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.chat.gradio_interface import create_chat_interface
+from app.core.logging_config import get_logger
 import gradio as gr
+
+# Initialize logging
+logger = get_logger('app.main')
 
 # Create FastAPI app
 app = FastAPI(
@@ -11,6 +15,8 @@ app = FastAPI(
     description="A chatbot that can handle cities, weather, research, and product queries",
     version="1.0.0"
 )
+
+logger.info("🚀 FastAPI application initialized")
 
 # Add CORS middleware
 app.add_middleware(
@@ -49,14 +55,20 @@ gradio_app = create_chat_interface()
 app = gr.mount_gradio_app(app, gradio_app, path="/gradio")
 
 if __name__ == "__main__":
+    logger.info("🤖 Starting Multi-Domain AI Chatbot...")
+    logger.info("📱 Gradio UI: http://localhost:8000/gradio")
+    logger.info("🔗 API Docs: http://localhost:8000/docs")
+    logger.info("❤️ Health Check: http://localhost:8000/health")
+
     print("🤖 Starting Multi-Domain AI Chatbot...")
     print("📱 Gradio UI: http://localhost:8000/gradio")
     print("🔗 API Docs: http://localhost:8000/docs")
-    print("❤️  Health Check: http://localhost:8000/health")
+    print("❤️ Health Check: http://localhost:8000/health")
 
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=True,
+        log_level="warning"  # Let our custom logging handle most output
     )
