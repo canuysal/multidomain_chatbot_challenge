@@ -1,6 +1,6 @@
 # 🤖 Multi-Domain AI Chatbot
 
-A comprehensive AI-powered chatbot that handles multiple domains including city information, weather data, research papers, and product searches through intelligent tool calling with OpenAI's GPT models.
+A comprehensive AI-powered chatbot that handles multiple domains including city information, weather data, research papers, and product searches through intelligent tool calling with any model provider that supports OpenAI API. (OpenRouter, Anthropic, Google, x-AI and more)
 
 ## ✨ Features
 
@@ -33,7 +33,7 @@ A comprehensive AI-powered chatbot that handles multiple domains including city 
 ### Prerequisites
 - Python 3.12+
 - PostgreSQL 12+
-- OpenAI API Key
+- OpenAI or other provider API Key
 - OpenWeatherMap API Key
 
 ### Installation
@@ -58,6 +58,7 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your API keys and database credentials
+# If using other provider than OpenAI, make sure to set LLM_BASE_URL
 ```
 
 4. **Setup database**
@@ -360,6 +361,7 @@ Built with ❤️ as part of the AIFA Challenge assessment project.
 
 This implementation demonstrates:
 - ✅ **Multi-domain functionality** with 4 integrated services
+- ✅ **Multi-provider support**, use any provider that implements OpenAI API
 - ✅ **AI-powered tool selection** without explicit classification
 - ✅ **Production-ready architecture** with comprehensive error handling
 - ✅ **Complete testing suite** with 90%+ code coverage

@@ -9,7 +9,10 @@ from app.tools.registry import get_tool_registry
 class OpenAIService:
     def __init__(self):
         settings = get_settings()
-        self.client = OpenAI(api_key=settings.openai_api_key)
+        self.client = OpenAI(
+            api_key=settings.llm_api_key,
+            base_url=settings.llm_base_url if settings.llm_base_url else None
+        )
         self.model = settings.default_model
         self.conversation_history: List[Dict[str, Any]] = []
         self.logger = get_logger('app.services.openai')
