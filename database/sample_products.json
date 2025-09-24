@@ -1,0 +1,182 @@
+[
+  {
+    "name": "MacBook Pro 14-inch",
+    "category": "Laptops",
+    "description": "Apple MacBook Pro with M2 Pro chip, 14-inch Liquid Retina XDR display, 16GB unified memory, 512GB SSD storage. Perfect for professional work and creative tasks.",
+    "price": "1999.00",
+    "brand": "Apple",
+    "in_stock": true,
+    "stock_quantity": 15
+  },
+  {
+    "name": "Dell XPS 13",
+    "category": "Laptops",
+    "description": "Ultra-thin and light laptop with Intel 12th Gen processors, 13.4-inch InfinityEdge display, premium build quality.",
+    "price": "1299.99",
+    "brand": "Dell",
+    "in_stock": true,
+    "stock_quantity": 8
+  },
+  {
+    "name": "iPhone 15 Pro",
+    "category": "Smartphones",
+    "description": "Latest iPhone with A17 Pro chip, titanium design, advanced camera system with 3x telephoto lens, and USB-C connectivity.",
+    "price": "999.00",
+    "brand": "Apple",
+    "in_stock": true,
+    "stock_quantity": 25
+  },
+  {
+    "name": "Samsung Galaxy S24 Ultra",
+    "category": "Smartphones",
+    "description": "Premium Android smartphone with S Pen, 200MP camera, 6.8-inch Dynamic AMOLED display, and advanced AI features.",
+    "price": "1199.99",
+    "brand": "Samsung",
+    "in_stock": false,
+    "stock_quantity": 0
+  },
+  {
+    "name": "Sony WH-1000XM5",
+    "category": "Headphones",
+    "description": "Industry-leading noise canceling wireless headphones with exceptional sound quality, 30-hour battery life, and multipoint connection.",
+    "price": "399.99",
+    "brand": "Sony",
+    "in_stock": true,
+    "stock_quantity": 12
+  },
+  {
+    "name": "AirPods Pro 2nd Generation",
+    "category": "Headphones",
+    "description": "Apple AirPods Pro with active noise cancellation, transparency mode, spatial audio, and MagSafe charging case.",
+    "price": "249.00",
+    "brand": "Apple",
+    "in_stock": true,
+    "stock_quantity": 20
+  },
+  {
+    "name": "iPad Air 5th Generation",
+    "category": "Tablets",
+    "description": "10.9-inch iPad Air with M1 chip, stunning colors, ultrafast Wi-Fi 6, and compatibility with Apple Pencil and Magic Keyboard.",
+    "price": "599.00",
+    "brand": "Apple",
+    "in_stock": true,
+    "stock_quantity": 10
+  },
+  {
+    "name": "Microsoft Surface Pro 9",
+    "category": "Tablets",
+    "description": "2-in-1 laptop tablet with 12th Gen Intel Core processors, 13-inch PixelSense touchscreen, and all-day battery life.",
+    "price": "1099.99",
+    "brand": "Microsoft",
+    "in_stock": true,
+    "stock_quantity": 6
+  },
+  {
+    "name": "Clean Code: A Handbook of Agile Software Craftsmanship",
+    "category": "Books",
+    "description": "A must-read book for software developers by Robert C. Martin. Learn principles and best practices for writing clean, maintainable code.",
+    "price": "42.99",
+    "brand": "Pearson",
+    "in_stock": true,
+    "stock_quantity": 50
+  },
+  {
+    "name": "The Pragmatic Programmer",
+    "category": "Books",
+    "description": "Your Journey to Mastery by David Thomas and Andrew Hunt. Essential reading for programmers who want to improve their craft.",
+    "price": "45.99",
+    "brand": "Addison-Wesley",
+    "in_stock": true,
+    "stock_quantity": 35
+  },
+  {
+    "name": "Nintendo Switch OLED",
+    "category": "Gaming",
+    "description": "Nintendo Switch console with vibrant 7-inch OLED screen, enhanced audio, wide adjustable stand, and 64GB internal storage.",
+    "price": "349.99",
+    "brand": "Nintendo",
+    "in_stock": true,
+    "stock_quantity": 18
+  },
+  {
+    "name": "PlayStation 5",
+    "category": "Gaming",
+    "description": "Sony PlayStation 5 console with ultra-high speed SSD, haptic feedback, adaptive triggers, and 3D Audio technology.",
+    "price": "499.99",
+    "brand": "Sony",
+    "in_stock": false,
+    "stock_quantity": 0
+  },
+  {
+    "name": "Mechanical Gaming Keyboard",
+    "category": "Accessories",
+    "description": "RGB backlit mechanical keyboard with Cherry MX switches, programmable keys, and durable aluminum construction.",
+    "price": "129.99",
+    "brand": "Corsair",
+    "in_stock": true,
+    "stock_quantity": 22
+  },
+  {
+    "name": "Wireless Gaming Mouse",
+    "category": "Accessories",
+    "description": "High-precision wireless gaming mouse with customizable RGB lighting, programmable buttons, and 25,600 DPI sensor.",
+    "price": "79.99",
+    "brand": "Logitech",
+    "in_stock": true,
+    "stock_quantity": 30
+  },
+  {
+    "name": "4K Monitor 27-inch",
+    "category": "Monitors",
+    "description": "Ultra-sharp 4K UHD monitor with IPS panel, HDR support, USB-C connectivity, and height-adjustable stand.",
+    "price": "399.99",
+    "brand": "LG",
+    "in_stock": true,
+    "stock_quantity": 14
+  },
+  {
+    "name": "Ergonomic Office Chair",
+    "category": "Furniture",
+    "description": "Premium ergonomic office chair with lumbar support, adjustable armrests, breathable mesh back, and 10-year warranty.",
+    "price": "449.99",
+    "brand": "Herman Miller",
+    "in_stock": true,
+    "stock_quantity": 7
+  },
+  {
+    "name": "Standing Desk Converter",
+    "category": "Furniture",
+    "description": "Height-adjustable standing desk converter that transforms any desk into a sit-stand workstation. Supports dual monitors.",
+    "price": "299.99",
+    "brand": "Varidesk",
+    "in_stock": true,
+    "stock_quantity": 11
+  },
+  {
+    "name": "Coffee Machine Espresso",
+    "category": "Appliances",
+    "description": "Professional-grade espresso machine with built-in grinder, milk frother, and programmable settings for perfect coffee.",
+    "price": "699.99",
+    "brand": "Breville",
+    "in_stock": true,
+    "stock_quantity": 5
+  },
+  {
+    "name": "Robot Vacuum Cleaner",
+    "category": "Appliances",
+    "description": "Smart robot vacuum with laser navigation, app control, automatic dirt disposal, and pet hair specialization.",
+    "price": "599.99",
+    "brand": "iRobot",
+    "in_stock": false,
+    "stock_quantity": 0
+  },
+  {
+    "name": "Bluetooth Speaker Portable",
+    "category": "Audio",
+    "description": "Waterproof portable Bluetooth speaker with 360-degree sound, 24-hour battery life, and party mode connectivity.",
+    "price": "149.99",
+    "brand": "JBL",
+    "in_stock": true,
+    "stock_quantity": 28
+  }
+]
