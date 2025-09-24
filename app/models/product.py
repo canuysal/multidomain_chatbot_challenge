@@ -1,12 +1,14 @@
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql import func
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from decimal import Decimal
 from datetime import datetime
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Product(Base):
@@ -30,6 +32,8 @@ class Product(Base):
 
 class ProductResponse(BaseModel):
     """Pydantic model for API responses"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     category: str
@@ -39,9 +43,6 @@ class ProductResponse(BaseModel):
     in_stock: bool
     stock_quantity: int
     created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 
 class ProductCreate(BaseModel):

@@ -9,7 +9,7 @@ class ChatInterface:
         self.logger = get_logger('app.chat.gradio')
 
     def chat_function(self, message: str, history: list) -> tuple:
-        """Process user message and return response for Gradio"""
+        """Process user message and return response for Gradio (using messages format)"""
         self.logger.info("🎨 Gradio chat request received")
         self.logger.debug(f"📝 Message: {message[:100]}...")
 
@@ -22,8 +22,9 @@ class ChatInterface:
             self.logger.info("🔄 Processing message via OpenAI service")
             response = self.openai_service.chat(message)
 
-            # Update history
-            history.append((message, response))
+            # Update history using messages format
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": response})
 
             self.logger.info(f"✅ Gradio chat completed successfully")
             self.logger.debug(f"📤 Response length: {len(response)}")
@@ -33,7 +34,8 @@ class ChatInterface:
         except Exception as e:
             self.logger.error(f"🚨 Gradio chat error: {str(e)}")
             error_response = f"Sorry, I encountered an error: {str(e)}"
-            history.append((message, error_response))
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": error_response})
             return history, ""
 
     def clear_chat(self):
@@ -41,7 +43,7 @@ class ChatInterface:
         self.logger.info("🧹 Gradio chat clear requested")
         self.openai_service.clear_conversation()
 
-        # Return welcome message when clearing chat
+        # Return welcome message when clearing chat (using messages format)
         welcome_message = """👋 **Welcome back to the Multi-Domain AI Chatbot!**
 
 I'm ready to help you with:
@@ -51,7 +53,7 @@ I'm ready to help you with:
 What would you like to know about today?"""
 
         self.logger.info("✅ Gradio chat cleared successfully, showing welcome message")
-        return [(None, welcome_message)]
+        return [{"role": "assistant", "content": welcome_message}]
 
     def create_interface(self):
         """Create and return Gradio interface"""
@@ -80,9 +82,9 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
             gr.Markdown("Ask me about cities, weather, research topics, or products!")
 
             chatbot = gr.Chatbot(
-                value=[(None, welcome_message)],  # Use None to avoid empty user bubble
+                value=[{"role": "assistant", "content": welcome_message}],
                 elem_id="chatbot",
-                bubble_full_width=False,
+                type="messages",
                 height=500
             )
 
