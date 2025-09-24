@@ -70,13 +70,13 @@ class OpenAIService:
             },
             {
                 "name": "find_products",
-                "description": "Search for products in the database by name or description",
+                "description": "Search for products in the database by name, description, category, or brand",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "Product name or description to search for"
+                            "description": "Product name, description, category, or brand to search for"
                         }
                     },
                     "required": ["query"]
@@ -110,7 +110,7 @@ class OpenAIService:
 
             # Call OpenAI with function calling
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o",
                 messages=messages,
                 functions=self.get_function_definitions(),
                 function_call="auto"
