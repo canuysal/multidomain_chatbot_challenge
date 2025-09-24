@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Allow extra fields in .env file
 
 
 def get_settings() -> Settings:
