@@ -1,16 +1,17 @@
 import requests
 from typing import Optional, Dict, Any, List
 import json
-from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
+from app.core.logging_config import log_request_start, log_request_end, log_error_with_context
+from app.tools.base.base_tool import BaseTool
 
 
-class ResearchTool:
+class ResearchTool(BaseTool):
     """Tool for fetching research information from Semantic Scholar API"""
 
     def __init__(self):
+        super().__init__()
         self.base_url = "https://api.semanticscholar.org/graph/v1"
         self.search_url = f"{self.base_url}/paper/search"
-        self.logger = get_logger('app.tools.research')
 
     def search_research(self, topic: str) -> str:
         """
@@ -236,6 +237,42 @@ class ResearchTool:
 
         except Exception as e:
             return f"Error formatting paper details: {str(e)}"
+
+    def get_tool_name(self) -> str:
+        """Return the tool identifier"""
+        return "research"
+
+    def get_tool_description(self) -> str:
+        """Return tool description"""
+        return "Tool for fetching research information from Semantic Scholar API"
+
+    def get_openai_function_schema(self) -> Dict[str, Any]:
+        """Return OpenAI function schema"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "search_research",
+                "description": "Search for academic research papers and information on a topic",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "topic": {
+                            "type": "string",
+                            "description": "Research topic or subject to search for"
+                        }
+                    },
+                    "required": ["topic"],
+                    "additionalProperties": False
+                },
+                "strict": True
+            }
+        }
+
+    def get_function_mapping(self) -> Dict[str, callable]:
+        """Return function mapping"""
+        return {
+            "search_research": self.search_research
+        }
 
 
 # Create global instance for use in OpenAI service

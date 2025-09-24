@@ -1,17 +1,16 @@
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from typing import List, Dict, Any
 from sqlalchemy import or_, and_
 from app.core.database import SessionLocal
 from app.models.product import Product
-from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
-from decimal import Decimal
+from app.core.logging_config import log_request_start, log_request_end, log_error_with_context
+from app.tools.base.base_tool import BaseTool
 
 
-class ProductTool:
+class ProductTool(BaseTool):
     """Tool for searching products in the database"""
 
     def __init__(self):
-        self.logger = get_logger('app.tools.product')
+        super().__init__()
 
     def find_products(self, query: str) -> str:
         """
@@ -246,6 +245,42 @@ class ProductTool:
 
         except Exception as e:
             return f"Found product but couldn't format it properly: {str(e)}"
+
+    def get_tool_name(self) -> str:
+        """Return the tool identifier"""
+        return "product"
+
+    def get_tool_description(self) -> str:
+        """Return tool description"""
+        return "Tool for searching products in the database"
+
+    def get_openai_function_schema(self) -> Dict[str, Any]:
+        """Return OpenAI function schema"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "find_products",
+                "description": "Search for products in the database by name, description, category, or brand",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Product name, description, category, or brand to search for"
+                        }
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False
+                },
+                "strict": True
+            }
+        }
+
+    def get_function_mapping(self) -> Dict[str, callable]:
+        """Return function mapping"""
+        return {
+            "find_products": self.find_products
+        }
 
 
 # Create global instance for use in OpenAI service

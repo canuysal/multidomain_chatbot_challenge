@@ -2,17 +2,18 @@ import requests
 from typing import Optional, Dict, Any
 from app.core.config import get_settings
 from app.utils.error_handlers import handle_tool_errors, log_request_response, APIConnectionError
-from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
+from app.core.logging_config import log_request_start, log_request_end, log_error_with_context
+from app.tools.base.base_tool import BaseTool
 
 
-class WeatherTool:
+class WeatherTool(BaseTool):
     """Tool for fetching weather information from OpenWeatherMap API"""
 
     def __init__(self):
+        super().__init__()
         settings = get_settings()
         self.api_key = settings.openweathermap_api_key
         self.base_url = "https://api.openweathermap.org/data/2.5/weather"
-        self.logger = get_logger('app.tools.weather')
 
     @handle_tool_errors("OpenWeatherMap")
     @log_request_response("WeatherTool")
@@ -178,6 +179,42 @@ class WeatherTool:
 💨 **Wind Speed**: 3.2 m/s
 
 ⚠️ This is mock data. To get real weather information, please configure the OpenWeatherMap API key."""
+
+    def get_tool_name(self) -> str:
+        """Return the tool identifier"""
+        return "weather"
+
+    def get_tool_description(self) -> str:
+        """Return tool description"""
+        return "Tool for fetching weather information from OpenWeatherMap API"
+
+    def get_openai_function_schema(self) -> Dict[str, Any]:
+        """Return OpenAI function schema"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get current weather conditions for a specific city",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "city_name": {
+                            "type": "string",
+                            "description": "Name of the city to get weather for"
+                        }
+                    },
+                    "required": ["city_name"],
+                    "additionalProperties": False
+                },
+                "strict": True
+            }
+        }
+
+    def get_function_mapping(self) -> Dict[str, callable]:
+        """Return function mapping"""
+        return {
+            "get_weather": self.get_weather
+        }
 
 
 # Create global instance for use in OpenAI service

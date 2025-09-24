@@ -2,15 +2,16 @@ import requests
 from typing import Optional, Dict, Any
 import json
 from app.utils.error_handlers import handle_tool_errors, log_request_response, APIConnectionError
-from app.core.logging_config import get_logger, log_request_start, log_request_end, log_error_with_context
+from app.core.logging_config import log_request_start, log_request_end, log_error_with_context
+from app.tools.base.base_tool import BaseTool
 
 
-class CityTool:
+class CityTool(BaseTool):
     """Tool for fetching city information from Wikipedia API"""
 
     def __init__(self):
+        super().__init__()
         self.wikipedia_api_url = "https://en.wikipedia.org/api/rest_v1/page/summary"
-        self.logger = get_logger('app.tools.city')
 
     @handle_tool_errors("Wikipedia")
     @log_request_response("CityTool")
@@ -147,6 +148,42 @@ class CityTool:
 
         except Exception as e:
             return f"Found information about {city_name}, but couldn't format it properly: {str(e)}"
+
+    def get_tool_name(self) -> str:
+        """Return the tool identifier"""
+        return "city"
+
+    def get_tool_description(self) -> str:
+        """Return tool description"""
+        return "Tool for fetching city information from Wikipedia API"
+
+    def get_openai_function_schema(self) -> Dict[str, Any]:
+        """Return OpenAI function schema"""
+        return {
+            "type": "function",
+            "function": {
+                "name": "get_city_info",
+                "description": "Get general information about a city using Wikipedia",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "city_name": {
+                            "type": "string",
+                            "description": "Name of the city to get information about"
+                        }
+                    },
+                    "required": ["city_name"],
+                    "additionalProperties": False
+                },
+                "strict": True
+            }
+        }
+
+    def get_function_mapping(self) -> Dict[str, callable]:
+        """Return function mapping"""
+        return {
+            "get_city_info": self.get_city_info
+        }
 
 
 # Create global instance for use in OpenAI service

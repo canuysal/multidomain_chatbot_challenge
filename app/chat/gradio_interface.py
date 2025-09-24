@@ -85,8 +85,11 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
                 value=[{"role": "assistant", "content": welcome_message}],
                 elem_id="chatbot",
                 type="messages",
-                height=500
+                height=500,
+                show_label=False,
             )
+
+            chatbot.clear(self.clear_chat, inputs=None, outputs=chatbot)
 
             with gr.Row():
                 msg = gr.Textbox(

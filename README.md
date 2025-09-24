@@ -14,6 +14,8 @@ A comprehensive AI-powered chatbot that handles multiple domains including city 
 - **Automatic Domain Detection**: No explicit classification - AI determines which tool to use
 - **Conversational Context**: Maintains multi-turn conversation history
 - **Intelligent Responses**: Natural language processing with OpenAI GPT models
+- **Dynamic Tool Registry**: Automatic tool discovery and registration system
+- **Selective Tool Loading**: Configure active tools via environment variables
 
 ### 💻 Dual Interface
 - **Web UI**: Beautiful Gradio interface for interactive chat
@@ -84,7 +86,10 @@ aifa_challenge/
 │   ├── core/                  # Configuration & database
 │   ├── models/                # SQLAlchemy models
 │   ├── services/              # Business logic (OpenAI service)
-│   ├── tools/                 # Domain-specific tools
+│   ├── tools/                 # Extensible tools system with auto-discovery
+│   │   ├── base/              # Base tool architecture
+│   │   ├── registry.py        # Tool discovery and management
+│   │   └── README.md          # Tool development guide
 │   └── utils/                 # Error handling utilities
 ├── database/                  # Database scripts & sample data
 ├── postman/                   # API testing collection
@@ -97,13 +102,19 @@ aifa_challenge/
 #### OpenAI Service (`app/services/openai_service.py`)
 - Manages conversation history
 - Implements function calling
+- Integrates with tool registry for dynamic tool loading
 - Handles AI responses and tool execution
 
-#### Tools (`app/tools/`)
-- **CityTool**: Wikipedia API integration
-- **WeatherTool**: OpenWeatherMap API integration
-- **ResearchTool**: Semantic Scholar API integration
-- **ProductTool**: PostgreSQL product search
+#### Tool Registry System (`app/tools/`)
+- **Automatic Discovery**: Scans and registers tools on startup
+- **Base Architecture**: All tools inherit from `BaseTool` class
+- **Selective Loading**: Control active tools via `ACTIVE_TOOLS` environment variable
+- **Available Tools**:
+  - **CityTool**: Wikipedia API integration
+  - **WeatherTool**: OpenWeatherMap API integration
+  - **ResearchTool**: Semantic Scholar API integration
+  - **ProductTool**: PostgreSQL product search
+- **Extensible**: Easy to add new tools - see [Tools README](app/tools/README.md)
 
 #### Error Handling (`app/utils/error_handlers.py`)
 - Comprehensive error classification
@@ -234,13 +245,33 @@ python database/bootstrap.py --status
 OPENAI_API_KEY=your_openai_api_key_here
 OPENWEATHERMAP_API_KEY=your_openweathermap_api_key_here
 DATABASE_URL=postgresql://username:password@localhost:5432/chatbot_db
+
+# Tool Configuration
+ACTIVE_TOOLS=city,weather,research,product  # Optional: comma-separated list
+# Leave unset to enable all discovered tools
 ```
 
 ### Service Configuration
-- **OpenAI Model**: GPT-3.5-turbo (configurable)
-- **Function Calling**: Automatic tool selection
+- **OpenAI Model**: GPT-4o (configurable)
+- **Function Calling**: Automatic tool selection via registry
+- **Tool Loading**: Dynamic discovery with selective activation
 - **Database**: PostgreSQL with connection pooling
 - **Logging**: Configurable log levels and formats
+
+### Tool Configuration Examples
+```bash
+# Enable all tools (default)
+# ACTIVE_TOOLS not set
+
+# Enable specific tools only
+export ACTIVE_TOOLS="city,weather"
+
+# Enable only product search
+export ACTIVE_TOOLS="product"
+
+# Development mode - enable research and city tools
+export ACTIVE_TOOLS="research,city"
+```
 
 ## 🚀 Deployment
 

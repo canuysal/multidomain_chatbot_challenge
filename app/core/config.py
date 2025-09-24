@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://localhost:5432/chatbot_db"
     log_level: str = "INFO"
     default_model: str = "gpt-4o"
+    active_tools: Optional[str] = None  # Comma-separated tool names (e.g., "city,weather")
 
 
 def get_settings() -> Settings:

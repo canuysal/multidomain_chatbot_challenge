@@ -3,10 +3,7 @@ from typing import List, Dict, Any, Optional
 from openai import OpenAI
 from app.core.config import get_settings
 from app.core.logging_config import get_logger, log_request_start, log_request_end, log_tool_call, log_tool_result, log_error_with_context
-from app.tools.city_tool import city_tool
-from app.tools.weather_tool import weather_tool
-from app.tools.research_tool import research_tool
-from app.tools.product_tool import product_tool
+from app.tools.registry import get_tool_registry
 
 
 class OpenAIService:
@@ -16,97 +13,21 @@ class OpenAIService:
         self.model = settings.default_model
         self.conversation_history: List[Dict[str, Any]] = []
         self.logger = get_logger('app.services.openai')
+
+        # Initialize tool registry
+        self.tool_registry = get_tool_registry()
+        registry_info = self.tool_registry.get_registry_info()
         self.logger.info(f"🤖 OpenAI service initialized with model: {self.model}")
+        self.logger.info(f"🔧 Tool registry loaded: {registry_info['total_active']}/{registry_info['total_discovered']} tools active")
+        self.logger.debug(f"🛠️ Active tools: {registry_info['active_tools']}")
 
     def get_available_functions(self) -> Dict[str, Any]:
-        """Define available functions for the AI to use"""
-        return {
-            "get_city_info": city_tool.get_city_info,
-            "get_weather": weather_tool.get_weather,
-            "search_research": research_tool.search_research,
-            "find_products": product_tool.find_products
-        }
+        """Get available functions from the tool registry"""
+        return self.tool_registry.get_available_functions()
 
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Define tool schemas for OpenAI tool calling"""
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_city_info",
-                    "description": "Get general information about a city using Wikipedia",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "city_name": {
-                                "type": "string",
-                                "description": "Name of the city to get information about"
-                            }
-                        },
-                        "required": ["city_name"],
-                        "additionalProperties": False
-                    },
-                    "strict": True
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_weather",
-                    "description": "Get current weather conditions for a specific city",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "city_name": {
-                                "type": "string",
-                                "description": "Name of the city to get weather for"
-                            }
-                        },
-                        "required": ["city_name"],
-                        "additionalProperties": False
-                        }
-                },
-                    "strict": True
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_research",
-                    "description": "Search for academic research papers and information on a topic",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "topic": {
-                                "type": "string",
-                                "description": "Research topic or subject to search for"
-                            }
-                        },
-                        "required": ["topic"],
-                        "additionalProperties": False,
-                    },
-                    "strict": True
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "find_products",
-                    "description": "Search for products in the database by name, description, category, or brand",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Product name, description, category, or brand to search for"
-                            }
-                        },
-                        "required": ["query"],
-                        "additionalProperties": False,
-                    },
-                    "strict": True
-                }
-            }
-        ]
+        """Get tool definitions from the tool registry"""
+        return self.tool_registry.get_openai_tool_definitions()
 
     def chat(self, user_message: str) -> str:
         """Process user message and return AI response with multi-turn tool calling"""
@@ -153,11 +74,12 @@ class OpenAIService:
                 self.logger.debug(f"📤 Sending {len(messages)} messages to OpenAI")
 
                 # Call OpenAI with tool calling
-                self.logger.info(f"🤖 Calling OpenAI API ({self.model}) - Turn {turn}")
+                tool_definitions = self.get_tool_definitions()
+                self.logger.info(f"🤖 Calling OpenAI API ({self.model}) - Turn {turn} with {len(tool_definitions)} tools")
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    tools=self.get_tool_definitions(),
+                    tools=tool_definitions,
                     # in case we want to force the tool choice, default is "auto"
                     tool_choice="auto",
                     # parallel_tool_calls=False
@@ -168,7 +90,7 @@ class OpenAIService:
 
                 # Check if AI wants to call functions (new tool_calls format)
                 if message.tool_calls:
-                    self.logger.info(f"🔧 Turn {turn}: AI requested {len(message.tool_calls)} tool calls")
+                    self.logger.info(f"🔧 Turn {turn}: AI requested {len(message.tool_calls)} tool calls {', '.join([tool_call.function.name for tool_call in message.tool_calls])}")
 
                     # Add the assistant message with tool calls to conversation
                     self.conversation_history.append({
