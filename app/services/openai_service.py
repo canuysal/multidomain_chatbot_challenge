@@ -1,4 +1,5 @@
 import json
+import uuid
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
 from app.core.config import get_settings
@@ -14,7 +15,7 @@ class OpenAIService:
             base_url=settings.llm_base_url if settings.llm_base_url else None
         )
         self.model = settings.default_model
-        self.conversation_history: List[Dict[str, Any]] = []
+        self.conversations: Dict[str, List[Dict[str, Any]]] = {}
         self.logger = get_logger('app.services.openai')
 
         # Initialize tool registry
@@ -32,16 +33,28 @@ class OpenAIService:
         """Get tool definitions from the tool registry"""
         return self.tool_registry.get_openai_tool_definitions()
 
-    def chat(self, user_message: str) -> str:
+    def chat(self, user_message: str, conversation_id: Optional[str] = None) -> tuple[str, str]:
         """Process user message and return AI response with multi-turn tool calling"""
-        request_id = log_request_start(self.logger, "CHAT", "OpenAI", {"message": user_message[:100] + "..." if len(user_message) > 100 else user_message})
+        # Generate conversation_id if not provided
+        if conversation_id is None:
+            conversation_id = str(uuid.uuid4())
+
+        # Initialize conversation if it doesn't exist
+        if conversation_id not in self.conversations:
+            self.conversations[conversation_id] = []
+
+        request_id = log_request_start(self.logger, "CHAT", "OpenAI", {
+            "message": user_message[:100] + "..." if len(user_message) > 100 else user_message,
+            "conversation_id": conversation_id
+        })
 
         try:
+            conversation_history = self.conversations[conversation_id]
             self.logger.debug(f"💬 USER INPUT [{request_id}]: {user_message}")
-            self.logger.info(f"🧠 Processing chat message with {len(self.conversation_history)} previous messages")
+            self.logger.info(f"🧠 Processing chat message for conversation {conversation_id} with {len(conversation_history)} previous messages")
 
             # Add user message to conversation history
-            self.conversation_history.append({
+            conversation_history.append({
                 "role": "user",
                 "content": user_message
             })
@@ -72,7 +85,7 @@ class OpenAIService:
                 self.logger.info(f"🔄 Turn {turn}/{max_turns}")
 
                 # Prepare messages for OpenAI
-                messages = [system_message] + self.conversation_history
+                messages = [system_message] + conversation_history
                 self.logger.debug(f"📤 Sending {len(messages)} messages to OpenAI")
 
                 # Call OpenAI with tool calling
@@ -95,7 +108,7 @@ class OpenAIService:
                     self.logger.info(f"🔧 Turn {turn}: AI requested {len(message.tool_calls)} tool calls {', '.join([tool_call.function.name for tool_call in message.tool_calls])}")
 
                     # Add the assistant message with tool calls to conversation
-                    self.conversation_history.append({
+                    conversation_history.append({
                         "role": "assistant",
                         "content": message.content,
                         "tool_calls": [
@@ -131,7 +144,7 @@ class OpenAIService:
                             self.logger.debug(f"🔧 Tool {tool_call_id} response: {str(function_response)[:200]}...")
 
                             # Add tool response to conversation
-                            self.conversation_history.append({
+                            conversation_history.append({
                                 "role": "tool",
                                 "tool_call_id": tool_call_id,
                                 "content": str(function_response)
@@ -141,7 +154,7 @@ class OpenAIService:
                             self.logger.error(f"❌ Tool call {tool_call_id} failed: {str(e)}")
                             log_tool_result(self.logger, "OpenAI", function_name, False, 0)
                             # Add error response to conversation
-                            self.conversation_history.append({
+                            conversation_history.append({
                                 "role": "tool",
                                 "tool_call_id": tool_call_id,
                                 "content": f"Error executing {function_name}: {str(e)}"
@@ -156,7 +169,7 @@ class OpenAIService:
                     self.logger.info(f"💬 Turn {turn}: Final response received (no tool calls)")
 
                     # Add final AI response to conversation history
-                    self.conversation_history.append({
+                    conversation_history.append({
                         "role": "assistant",
                         "content": final_message
                     })
@@ -171,23 +184,62 @@ class OpenAIService:
 
             self.logger.debug(f"🤖 AI RESPONSE [{request_id}]: {final_message}")
             self.logger.info(f"✅ Chat completed successfully after {turn} turns, response length: {len(final_message or '')}")
-            log_request_end(self.logger, request_id, 200, {"response_length": len(final_message or ''), "turns": turn})
+            log_request_end(self.logger, request_id, 200, {"response_length": len(final_message or ''), "turns": turn, "conversation_id": conversation_id})
 
-            return final_message
+            return final_message, conversation_id
 
         except Exception as e:
             log_error_with_context(self.logger, e, "chat_processing", {
                 "user_message": user_message[:100],
-                "conversation_length": len(self.conversation_history)
+                "conversation_id": conversation_id,
+                "conversation_length": len(self.conversations.get(conversation_id, []))
             })
             log_request_end(self.logger, request_id, 500)
             error_response = f"Sorry, I encountered an internal error. Please try again later."
             self.logger.warning(f"🚨 Error while processing chat: {str(e)}")
-            return error_response
+            return error_response, conversation_id
 
-    def clear_conversation(self):
+    def clear_conversation(self, conversation_id: Optional[str] = None):
         """Clear conversation history"""
-        previous_length = len(self.conversation_history)
-        self.conversation_history = []
-        self.logger.info(f"🧹 Conversation history cleared (was {previous_length} messages)")
+        if conversation_id is None:
+            # Clear all conversations
+            total_messages = sum(len(conv) for conv in self.conversations.values())
+            total_conversations = len(self.conversations)
+            self.conversations = {}
+            self.logger.info(f"🧹 All conversation history cleared ({total_conversations} conversations, {total_messages} messages)")
+        else:
+            # Clear specific conversation
+            if conversation_id in self.conversations:
+                previous_length = len(self.conversations[conversation_id])
+                del self.conversations[conversation_id]
+                self.logger.info(f"🧹 Conversation {conversation_id} cleared (was {previous_length} messages)")
+            else:
+                self.logger.warning(f"⚠️ Attempted to clear non-existent conversation: {conversation_id}")
+
+    def get_conversation_history(self, conversation_id: str) -> List[Dict[str, Any]]:
+        """Get conversation history for a specific conversation_id"""
+        return self.conversations.get(conversation_id, [])
+
+    def get_conversation_count(self) -> int:
+        """Get total number of active conversations"""
+        return len(self.conversations)
+
+    def get_total_message_count(self) -> int:
+        """Get total number of messages across all conversations"""
+        return sum(len(conv) for conv in self.conversations.values())
+
+    def list_conversation_ids(self) -> List[str]:
+        """Get list of all conversation IDs"""
+        return list(self.conversations.keys())
+
+    def cleanup_empty_conversations(self) -> int:
+        """Remove conversations with no messages and return count of removed conversations"""
+        empty_conversations = [conv_id for conv_id, history in self.conversations.items() if len(history) == 0]
+        for conv_id in empty_conversations:
+            del self.conversations[conv_id]
+
+        if empty_conversations:
+            self.logger.info(f"🧹 Cleaned up {len(empty_conversations)} empty conversations")
+
+        return len(empty_conversations)
 

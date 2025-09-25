@@ -52,7 +52,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Hello! How are you today?\"\n}"
+              "raw": "{\n    \"message\": \"Hello! How are you today?\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -68,9 +68,15 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/chat/history",
+              "raw": "{{base_url}}/api/chat/history?conversation_id=postman_test",
               "host": ["{{base_url}}"],
-              "path": ["api", "chat", "history"]
+              "path": ["api", "chat", "history"],
+              "query": [
+                {
+                  "key": "conversation_id",
+                  "value": "postman_test"
+                }
+              ]
             }
           },
           "response": []
@@ -79,11 +85,46 @@
           "name": "Clear Chat History",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"conversation_id\": \"postman_test\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/api/chat/clear",
               "host": ["{{base_url}}"],
               "path": ["api", "chat", "clear"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Conversation Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chat/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup Empty Conversations",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chat/cleanup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat", "cleanup"]
             }
           },
           "response": []
@@ -105,7 +146,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Tell me about Ankara\"\n}"
+              "raw": "{\n    \"message\": \"Tell me about Ankara\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -127,7 +168,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"What can you tell me about New York?\"\n}"
+              "raw": "{\n    \"message\": \"What can you tell me about New York?\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -176,7 +217,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"What's the weather like in Ankara?\"\n}"
+              "raw": "{\n    \"message\": \"What's the weather like in Ankara?\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -247,7 +288,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Find research papers about artificial intelligence\"\n}"
+              "raw": "{\n    \"message\": \"Find research papers about artificial intelligence\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -318,7 +359,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Do you have any laptops available?\"\n}"
+              "raw": "{\n    \"message\": \"Do you have any laptops available?\",\n    \"conversation_id\": \"postman_test\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
@@ -412,6 +453,137 @@
               "raw": "{{base_url}}/api/chat",
               "host": ["{{base_url}}"],
               "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conversation Isolation Tests",
+      "item": [
+        {
+          "name": "Start Conversation A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"My name is Alice. Remember this for our conversation.\",\n    \"conversation_id\": \"conversation_a\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Conversation B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"My name is Bob. Remember this for our conversation.\",\n    \"conversation_id\": \"conversation_b\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Conversation A Memory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"What is my name?\",\n    \"conversation_id\": \"conversation_a\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Conversation B Memory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"What is my name?\",\n    \"conversation_id\": \"conversation_b\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get History Conversation A",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chat/history?conversation_id=conversation_a",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat", "history"],
+              "query": [
+                {
+                  "key": "conversation_id",
+                  "value": "conversation_a"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get History Conversation B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chat/history?conversation_id=conversation_b",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat", "history"],
+              "query": [
+                {
+                  "key": "conversation_id",
+                  "value": "conversation_b"
+                }
+              ]
             }
           },
           "response": []

@@ -1,4 +1,5 @@
 import gradio as gr
+import uuid
 from app.services.openai_service import OpenAIService
 from app.core.logging_config import get_logger
 
@@ -7,6 +8,7 @@ class ChatInterface:
     def __init__(self):
         self.openai_service = OpenAIService()
         self.logger = get_logger('app.chat.gradio')
+        self.conversation_id = str(uuid.uuid4())  # Generate a unique conversation ID for this Gradio session
 
     def chat_function(self, message: str, history: list) -> tuple:
         """Process user message and return response for Gradio (using messages format)"""
@@ -19,8 +21,8 @@ class ChatInterface:
 
         try:
             # Get response from OpenAI service
-            self.logger.info("🔄 Processing message via OpenAI service")
-            response = self.openai_service.chat(message)
+            self.logger.info(f"🔄 Processing message via OpenAI service (conversation: {self.conversation_id})")
+            response, _ = self.openai_service.chat(message, self.conversation_id)
 
             # Update history using messages format
             history.append({"role": "user", "content": message})
@@ -40,8 +42,11 @@ class ChatInterface:
 
     def clear_chat(self):
         """Clear both Gradio and OpenAI conversation history"""
-        self.logger.info("🧹 Gradio chat clear requested")
-        self.openai_service.clear_conversation()
+        self.logger.info(f"🧹 Gradio chat clear requested (conversation: {self.conversation_id})")
+        self.openai_service.clear_conversation(self.conversation_id)
+        # Generate a new conversation ID for the fresh start
+        self.conversation_id = str(uuid.uuid4())
+        self.logger.info(f"🆕 New conversation ID generated: {self.conversation_id}")
 
         # Return welcome message when clearing chat (using messages format)
         welcome_message = """👋 **Welcome back to the Multi-Domain AI Chatbot!**
@@ -80,6 +85,7 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
         with gr.Blocks(title="AI Chatbot", theme=gr.themes.Soft()) as interface:
             gr.Markdown("# 🤖 Multi-Domain AI Chatbot")
             gr.Markdown("Ask me about cities, weather, research topics, or products!")
+            gr.Markdown(f"**Session ID:** `{self.conversation_id}`", elem_classes="session-info")
 
             chatbot = gr.Chatbot(
                 value=[{"role": "assistant", "content": welcome_message}],
