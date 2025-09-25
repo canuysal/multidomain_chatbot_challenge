@@ -2,7 +2,7 @@ import gradio as gr
 import uuid
 from app.services.openai_service import OpenAIService
 from app.core.logging_config import get_logger
-from app.api.chat import CustomTool
+from app.api.chat import CustomTool, CustomParameter
 
 
 class ChatInterface:
@@ -10,10 +10,54 @@ class ChatInterface:
         self.openai_service = OpenAIService()
         self.logger = get_logger('app.chat.gradio')
 
+    def render_param_rows(self, params):
+        """Render HTML for parameter rows"""
+        if not params:
+            return "<div style='color: #888; font-style: italic;'>No parameters defined</div>"
+
+        html = "<div>"
+        for i, param in enumerate(params):
+            name = param.get('name', '')
+            desc = param.get('description', '')
+            required = param.get('required', False)
+
+            html += f"""
+            <div style='border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 8px 0; background: #f9f9f9;'>
+                <div style='display: flex; align-items: center; gap: 12px; margin-bottom: 8px;'>
+                    <div style='flex: 1;'>
+                        <label style='font-weight: bold; color: #333;'>Name:</label>
+                        <input type='text' value='{name}' placeholder='parameter_name'
+                               style='width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 2px;'
+                               onchange='updateParam({i}, "name", this.value)'>
+                    </div>
+                    <div style='flex: 2;'>
+                        <label style='font-weight: bold; color: #333;'>Description:</label>
+                        <input type='text' value='{desc}' placeholder='Parameter description'
+                               style='width: 100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 2px;'
+                               onchange='updateParam({i}, "description", this.value)'>
+                    </div>
+                    <div style='display: flex; align-items: center; gap: 8px;'>
+                        <label style='font-weight: bold; color: #333;'>
+                            <input type='checkbox' {'checked' if required else ''}
+                                   onchange='updateParam({i}, "required", this.checked)'
+                                   style='margin-right: 4px;'>
+                            Required
+                        </label>
+                        <button onclick='removeParam({i})'
+                                style='background: #ff4444; color: white; border: none; border-radius: 4px;
+                                       padding: 4px 8px; cursor: pointer; font-size: 12px;'>❌</button>
+                    </div>
+                </div>
+            </div>
+            """
+        html += "</div>"
+
+        return html
+
     def chat_function(self, message: str, history: list, city_enabled: bool, weather_enabled: bool,
                      research_enabled: bool, product_enabled: bool, custom_api_enabled: bool,
                      custom_api_name: str, custom_api_endpoint: str, custom_api_description: str,
-                     request: gr.Request) -> tuple:
+                     parameters_data: str, request: gr.Request) -> tuple:
         """Process user message and return response for Gradio (using messages format)"""
         # Get or create conversation_id for this session
         if hasattr(request, 'session_hash'):
@@ -44,10 +88,27 @@ class ChatInterface:
             # Create custom API tool if enabled
             custom_api = None
             if custom_api_enabled and custom_api_name and custom_api_endpoint:
+                # Parse parameters data (JSON format)
+                parameters = []
+                if parameters_data:
+                    try:
+                        import json
+                        param_list = json.loads(parameters_data)
+                        for param in param_list:
+                            if param.get('name'):
+                                parameters.append(CustomParameter(
+                                    name=param['name'],
+                                    description=param.get('description', ''),
+                                    required=param.get('required', False)
+                                ))
+                    except json.JSONDecodeError:
+                        self.logger.warning(f"Failed to parse parameters data: {parameters_data}")
+
                 custom_api = CustomTool(
                     name=custom_api_name,
                     endpoint=custom_api_endpoint,
-                    description=custom_api_description
+                    description=custom_api_description,
+                    parameters=parameters if parameters else None
                 )
 
             # Get response from OpenAI service
@@ -161,22 +222,126 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
                 with gr.Row():
                     custom_api_name = gr.Textbox(
                         label="Tool Name",
-                        value="get_jokes",
+                        value="search_repositories",
                         placeholder="Enter custom tool name...",
                         scale=2
                     )
                     custom_api_endpoint = gr.Textbox(
                         label="API Endpoint",
-                        value="https://official-joke-api.appspot.com/jokes/random",
+                        value="https://api.github.com/search/repositories",
                         placeholder="https://api.example.com/endpoint",
                         scale=3
                     )
                 custom_api_description = gr.Textbox(
                     label="Description",
-                    value="Get a random joke",
+                    value="Search GitHub Repositories for a topic. In your response, list repositories by name, description and html_url if available. Sort by stars, descending unless specified otherwise.",
                     placeholder="Describe what this API does...",
                     lines=2
                 )
+
+                # Parameters section
+                with gr.Column():
+                    with gr.Row():
+                        gr.Markdown("**Parameters**")
+                        add_param_btn = gr.Button("➕ Add Parameter", size="sm", variant="secondary")
+
+                    # Create multiple parameter rows with GitHub API defaults
+                    param_rows = []
+                    default_params = [
+                        {"name": "q", "desc": "Query to search for", "required": True, "visible": True},
+                        {"name": "sort", "desc": "Sort options, can be one of \"stars\", \"forks\" or \"updated\"", "required": False, "visible": True},
+                        {"name": "order", "desc": "can be either \"asc\" or \"desc\" asc - ascending desc - descending", "required": False, "visible": True},
+                        {"name": "", "desc": "", "required": False, "visible": False},
+                        {"name": "", "desc": "", "required": False, "visible": False}
+                    ]
+
+                    for i in range(5):  # Support up to 5 parameters
+                        default = default_params[i]
+                        with gr.Row(visible=default["visible"]) as row:
+                            param_name = gr.Textbox(label=f"Name", scale=2, placeholder="parameter_name", value=default["name"])
+                            param_desc = gr.Textbox(label=f"Description", scale=3, placeholder="Parameter description", value=default["desc"])
+                            param_required = gr.Checkbox(label="Required", scale=1, value=default["required"])
+                            remove_btn = gr.Button("❌", size="sm", variant="secondary", scale=1)
+
+                        param_rows.append({
+                            'row': row,
+                            'name': param_name,
+                            'desc': param_desc,
+                            'required': param_required,
+                            'remove_btn': remove_btn
+                        })
+
+                    # Track which rows are visible - start with 3 for GitHub API
+                    visible_count = gr.State(3)
+
+                    # Hidden field to collect all parameters as JSON - initialized with GitHub API params
+                    initial_params = [
+                        {"name": "q", "description": "Query to search for", "required": True},
+                        {"name": "sort", "description": "Sort options, can be one of \"stars\", \"forks\" or \"updated\"", "required": False},
+                        {"name": "order", "description": "can be either \"asc\" or \"desc\" asc - ascending desc - descending", "required": False}
+                    ]
+                    import json
+                    parameters_data = gr.Textbox(value=json.dumps(initial_params), visible=False)
+
+                    def add_parameter_row(current_count):
+                        """Show next parameter row"""
+                        if current_count < len(param_rows):
+                            new_count = current_count + 1
+                            # Return visibility states for all rows
+                            visibility = [gr.update(visible=True) if i < new_count else gr.update() for i in range(len(param_rows))]
+                            return [new_count] + visibility
+                        return [current_count] + [gr.update() for _ in range(len(param_rows))]
+
+                    def remove_parameter_row(current_count):
+                        """Hide a parameter row"""
+                        if current_count > 0:
+                            new_count = current_count - 1
+                            # Clear the values and hide the last visible row
+                            visibility = [gr.update(visible=True) if i < new_count else gr.update(visible=False) for i in range(len(param_rows))]
+                            return [new_count] + visibility
+                        return [current_count] + [gr.update() for _ in range(len(param_rows))]
+
+                    def collect_parameters(*args):
+                        """Collect all parameter data into JSON"""
+                        current_count = args[0]
+                        params = []
+                        for i in range(current_count):
+                            name = args[1 + i * 3]  # name, desc, required for each param
+                            desc = args[1 + i * 3 + 1]
+                            required = args[1 + i * 3 + 2]
+                            if name:  # Only add if name is not empty
+                                params.append({
+                                    "name": name,
+                                    "description": desc or "",
+                                    "required": required
+                                })
+                        import json
+                        return json.dumps(params)
+
+                    # Add parameter button click
+                    add_param_btn.click(
+                        fn=add_parameter_row,
+                        inputs=[visible_count],
+                        outputs=[visible_count] + [row['row'] for row in param_rows]
+                    )
+
+                    # Remove button clicks
+                    for i, row in enumerate(param_rows):
+                        row['remove_btn'].click(
+                            fn=remove_parameter_row,
+                            inputs=[visible_count],
+                            outputs=[visible_count] + [r['row'] for r in param_rows]
+                        )
+
+                    # Collect parameters on any change
+                    param_inputs = [visible_count]
+                    for row in param_rows:
+                        param_inputs.extend([row['name'], row['desc'], row['required']])
+
+                    for row in param_rows:
+                        row['name'].change(fn=collect_parameters, inputs=param_inputs, outputs=[parameters_data])
+                        row['desc'].change(fn=collect_parameters, inputs=param_inputs, outputs=[parameters_data])
+                        row['required'].change(fn=collect_parameters, inputs=param_inputs, outputs=[parameters_data])
 
             # Function to update session info
             def update_session_info(request: gr.Request):
@@ -192,18 +357,19 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
                 outputs=session_info
             )
 
+
             # Set up event handlers
             send_btn.click(
                 fn=self.chat_function,
                 inputs=[msg, chatbot, city_tool, weather_tool, research_tool, product_tool,
-                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description],
+                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description, parameters_data],
                 outputs=[chatbot, msg]
             )
 
             msg.submit(
                 fn=self.chat_function,
                 inputs=[msg, chatbot, city_tool, weather_tool, research_tool, product_tool,
-                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description],
+                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description, parameters_data],
                 outputs=[chatbot, msg]
             )
 

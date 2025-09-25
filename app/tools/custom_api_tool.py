@@ -9,15 +9,16 @@ from app.tools.base.base_tool import BaseTool
 class CustomAPITool(BaseTool):
     """Dynamic tool for calling custom API endpoints"""
 
-    def __init__(self, name: str, endpoint: str, description: str):
+    def __init__(self, name: str, endpoint: str, description: str, parameters=None):
         self.tool_name = name
         self.api_endpoint = endpoint
         self.tool_description = description
+        self.custom_parameters = parameters or []
         super().__init__()
 
     @handle_tool_errors("Custom API")
     @log_request_response("CustomAPITool")
-    def call_api(self) -> str:
+    def call_api(self, **kwargs) -> str:
         """
         Call the custom API endpoint
 
@@ -28,23 +29,31 @@ class CustomAPITool(BaseTool):
 
         try:
             self.logger.info(f"🔧 Calling custom API: {self.tool_name} -> {self.api_endpoint}")
+            self.logger.debug(f"🔧 API parameters: {kwargs}")
 
             headers = {
                 'User-Agent': 'MultiDomainChatbot/1.0 (https://example.com/contact)',
                 'Accept': 'application/json'
             }
 
+            # Add parameters as query string for GET requests
+            params = {}
+            for param in self.custom_parameters:
+                param_name = param.name if hasattr(param, 'name') else param.get('name')
+                if param_name in kwargs:
+                    params[param_name] = kwargs[param_name]
+
             self.logger.info(f"📡 Custom API request to: {self.api_endpoint}")
-            response = requests.get(self.api_endpoint, headers=headers, timeout=30)
+            self.logger.info(f"📋 Query parameters: {params}")
+            response = requests.get(self.api_endpoint, headers=headers, params=params, timeout=30)
             self.logger.info(f"📥 Custom API response: {response.status_code}")
 
             if response.status_code == 200:
                 try:
                     # Try to parse as JSON
-                    data = response.json()
+                    result = response.json()
                     self.logger.info(f"✅ Successfully fetched data from {self.tool_name}")
-                    self.logger.info(f"🔍 Custom API response data: {json.dumps(data, indent=2)}")
-                    result = self._format_api_response(data)
+                    self.logger.info(f"🔍 Custom API response data: {json.dumps(result, indent=2)}")
                     log_request_end(self.logger, request_id, 200, {"response_length": len(result)})
                     return result
                 except json.JSONDecodeError:
@@ -79,44 +88,6 @@ class CustomAPITool(BaseTool):
             log_request_end(self.logger, request_id, 500)
             return f"An unexpected error occurred: {str(e)}"
 
-    def _format_api_response(self, data: Any) -> str:
-        """
-        Format the API response into a readable format
-
-        Args:
-            data: API response data
-
-        Returns:
-            str: Formatted response
-        """
-        try:
-            if isinstance(data, dict):
-                # Handle common joke API format
-                if 'setup' in data and 'punchline' in data:
-                    return f"🤣 **{data.get('setup')}**\n\n{data.get('punchline')}"
-                elif 'joke' in data:
-                    return f"🤣 {data.get('joke')}"
-                else:
-                    # Generic dict formatting
-                    formatted_lines = []
-                    for key, value in data.items():
-                        if isinstance(value, (str, int, float, bool)):
-                            formatted_lines.append(f"**{key.title()}**: {value}")
-                    return "\n".join(formatted_lines) if formatted_lines else json.dumps(data, indent=2)
-
-            elif isinstance(data, list):
-                if len(data) > 0 and isinstance(data[0], dict):
-                    # Format list of objects
-                    result = []
-                    for i, item in enumerate(data[:5]):  # Limit to first 5 items
-                        result.append(f"**Item {i+1}**: {json.dumps(item, indent=2)}")
-                    return "\n\n".join(result)
-                else:
-                    return "\n".join(str(item) for item in data[:10])  # Limit to first 10 items
-
-            else:
-                return str(data)
-
         except Exception as e:
             return f"Response received, but couldn't format it properly: {json.dumps(data, indent=2)}"
 
@@ -130,6 +101,37 @@ class CustomAPITool(BaseTool):
 
     def get_openai_function_schema(self) -> Dict[str, Any]:
         """Return OpenAI function schema"""
+        properties = {}
+        required = []
+
+        for param in self.custom_parameters:
+            param_name = param.name if hasattr(param, 'name') else param.get('name')
+            param_desc = param.description if hasattr(param, 'description') else param.get('description', '')
+            param_required = param.required if hasattr(param, 'required') else param.get('required', False)
+
+            properties[param_name] = {
+                "type": "string",
+                "description": param_desc
+            }
+
+            if param_required:
+                required.append(param_name)
+
+        # If no parameters defined, return a simple schema
+        if not properties:
+            return {
+                "type": "function",
+                "function": {
+                    "name": self.get_tool_name(),
+                    "description": self.get_tool_description(),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    }
+                }
+            }
+
         return {
             "type": "function",
             "function": {
@@ -137,11 +139,9 @@ class CustomAPITool(BaseTool):
                 "description": self.get_tool_description(),
                 "parameters": {
                     "type": "object",
-                    "properties": {},
-                    "required": [],
-                    "additionalProperties": False
+                    "properties": properties,
+                    "required": required,
                 },
-                "strict": True
             }
         }
 

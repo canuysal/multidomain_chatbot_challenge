@@ -102,9 +102,11 @@ class OpenAIService:
 
             if custom_api:
                 self.logger.info(f"🔧 Creating custom API tool: {custom_api.name} -> {custom_api.endpoint}")
-                custom_tool_instance = CustomAPITool(custom_api.name, custom_api.endpoint, custom_api.description)
+                custom_tool_instance = CustomAPITool(custom_api.name, custom_api.endpoint, custom_api.description, custom_api.parameters)
                 custom_tool_functions = custom_tool_instance.get_function_mapping()
                 self.logger.debug(f"🛠️ Custom tool functions: {list(custom_tool_functions.keys())}")
+                if custom_api.parameters:
+                    self.logger.debug(f"🔧 Custom tool parameters: {[p.name if hasattr(p, 'name') else p.get('name') for p in custom_api.parameters]}")
 
             # Multi-turn loop for tool calling
             max_turns = 10  # Prevent infinite loops
@@ -113,7 +115,14 @@ class OpenAIService:
 
             # Call OpenAI with tool calling - get filtered tools and add custom tool if available
             tool_definitions = self.get_tool_definitions(filter_tools)
+            # Add custom tool if available
+            if custom_tool_instance:
+                custom_schema = custom_tool_instance.get_openai_function_schema()
+                tool_definitions.append(custom_schema)
+
             self.logger.info(f"🛠️ Enabled tools: {[tool.get('function', {}).get('name', '') for tool in tool_definitions]}")
+
+            self.logger.debug(f"🛠️ Tool definitions: {json.dumps(tool_definitions, indent=2)}")
 
             # Check which tools are enabled
             enabled_tools = [tool.get('function', {}).get('name', '') for tool in tool_definitions]
@@ -156,11 +165,6 @@ If the tool you need to use is not enabled, inform the user that the tool is not
                 # Prepare messages for OpenAI
                 messages = [system_message] + conversation_history
                 self.logger.debug(f"📤 Sending {len(messages)} messages to OpenAI")
-
-                # Add custom tool if available
-                if custom_tool_instance:
-                    custom_schema = custom_tool_instance.get_openai_function_schema()
-                    tool_definitions.append(custom_schema)
 
                 self.logger.info(f"🤖 Calling OpenAI API ({self.model}) - Turn {turn} with {len(tool_definitions)} tools")
                 response = self.client.chat.completions.create(

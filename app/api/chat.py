@@ -9,10 +9,17 @@ openai_service = OpenAIService()
 logger = get_logger('app.api.chat')
 
 
+class CustomParameter(BaseModel):
+    name: str
+    description: str
+    required: bool = False
+
+
 class CustomTool(BaseModel):
     name: str
     endpoint: str
     description: str
+    parameters: Optional[List[CustomParameter]] = None
 
 
 class ChatMessage(BaseModel):

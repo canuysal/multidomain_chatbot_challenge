@@ -758,7 +758,7 @@
       "name": "Custom API Tool Tests",
       "item": [
         {
-          "name": "Test Custom Jokes API Tool",
+          "name": "Test Custom API with Parameters",
           "request": {
             "method": "POST",
             "header": [
@@ -769,7 +769,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"message\": \"Tell me a joke\",\n    \"conversation_id\": \"postman_test\",\n    \"filter_tools\": [\"city\", \"weather\", \"research\", \"product\"],\n    \"custom_api\": {\n        \"name\": \"get_jokes\",\n        \"endpoint\": \"https://official-joke-api.appspot.com/jokes/random\",\n        \"description\": \"Get a random joke\"\n    }\n}"
+              "raw": "{\n    \"message\": \"Find popular Python machine learning repositories\",\n    \"conversation_id\": \"postman_test\",\n    \"filter_tools\": [],\n    \"custom_api\": {\n        \"name\": \"search_repositories\",\n        \"endpoint\": \"https://api.github.com/search/repositories\",\n        \"description\": \"Search GitHub Repositories for a topic. In your response, list repositories by name, description and html_url if available. Sort by stars, descending unless specified otherwise.\",\n        \"parameters\": [\n            {\n                \"name\": \"q\",\n                \"description\": \"Query to search for\",\n                \"required\": true\n            },\n            {\n                \"name\": \"sort\",\n                \"description\": \"Sort options, can be one of \\\"stars\\\", \\\"forks\\\" or \\\"updated\\\"\",\n                \"required\": false\n            },\n            {\n                \"name\": \"order\",\n                \"description\": \"can be either \\\"asc\\\" or \\\"desc\\\" asc - ascending desc - descending\",\n                \"required\": false\n            }\n        ]\n    }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/chat",
