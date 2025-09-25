@@ -32,7 +32,8 @@ class TestChatAPI:
     @patch('app.api.chat.openai_service')
     def test_chat_endpoint_success(self, mock_service):
         """Test successful chat request"""
-        mock_service.chat.return_value = "Hello! How can I help you today?"
+        # OpenAI service now returns a tuple (response, conversation_id)
+        mock_service.chat.return_value = ("Hello! How can I help you today?", "test_conversation_id")
 
         response = client.post(
             "/api/chat",
@@ -42,8 +43,12 @@ class TestChatAPI:
         assert response.status_code == 200
         data = response.json()
         assert "response" in data
-        assert "Hello!" in data["response"]
         assert "conversation_id" in data
+        assert data["response"] == "Hello! How can I help you today?"
+        assert data["conversation_id"] == "test_conversation_id"
+
+        # Verify the service was called with correct parameters
+        mock_service.chat.assert_called_once_with("Hello", None, None, None)
 
     def test_chat_endpoint_empty_message(self):
         """Test chat endpoint with empty message"""
@@ -96,31 +101,120 @@ class TestChatAPI:
     @patch('app.api.chat.openai_service')
     def test_get_chat_history_empty(self, mock_service):
         """Test getting empty chat history"""
-        mock_service.conversation_history = []
+        mock_service.get_conversation_history.return_value = []
 
-        response = client.get("/api/chat/history")
+        response = client.get("/api/chat/history", params={"conversation_id": "test"})
 
         assert response.status_code == 200
         data = response.json()
         assert "history" in data
         assert "message_count" in data
+        assert "conversation_id" in data
         assert data["message_count"] == 0
+        assert data["conversation_id"] == "test"
 
     @patch('app.api.chat.openai_service')
     def test_get_chat_history_with_messages(self, mock_service):
         """Test getting chat history with messages"""
-        mock_service.conversation_history = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"}
-        ]
+        mock_service.conversations = {
+            "conv1": [{"role": "user", "content": "Hello"}],
+            "conv2": [{"role": "assistant", "content": "Hi there!"}]
+        }
 
         response = client.get("/api/chat/history")
 
         assert response.status_code == 200
         data = response.json()
-        assert "history" in data
-        assert "message_count" in data
-        assert data["message_count"] == 2
+        assert "conversations" in data
+        assert "total_conversations" in data
+        assert "total_messages" in data
+        assert data["total_conversations"] == 2
+        assert data["total_messages"] == 2
+
+    @patch('app.api.chat.openai_service')
+    def test_chat_endpoint_with_filter_tools(self, mock_service):
+        """Test chat request with filter_tools parameter"""
+        mock_service.chat.return_value = ("Weather response", "test_conversation_id")
+
+        response = client.post(
+            "/api/chat",
+            json={
+                "message": "What's the weather?",
+                "filter_tools": ["weather", "city"]
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "response" in data
+        assert "conversation_id" in data
+        assert data["response"] == "Weather response"
+
+        # Verify the service was called with filter_tools
+        mock_service.chat.assert_called_once_with(
+            "What's the weather?", None, ["weather", "city"], None
+        )
+
+    @patch('app.api.chat.openai_service')
+    def test_chat_endpoint_with_custom_api(self, mock_service):
+        """Test chat request with custom_api parameter"""
+        mock_service.chat.return_value = ("Custom API response", "test_conversation_id")
+
+        custom_tool = {
+            "name": "search_repositories",
+            "endpoint": "https://api.github.com/search/repositories",
+            "description": "Search GitHub repositories",
+            "parameters": [
+                {"name": "q", "description": "Search query", "required": True},
+                {"name": "sort", "description": "Sort order", "required": False}
+            ]
+        }
+
+        response = client.post(
+            "/api/chat",
+            json={
+                "message": "Search for Python repos",
+                "custom_api": custom_tool
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "response" in data
+        assert "conversation_id" in data
+        assert data["response"] == "Custom API response"
+
+        # Verify the service was called with custom_api
+        args = mock_service.chat.call_args[0]
+        assert args[0] == "Search for Python repos"  # message
+        assert args[1] is None  # conversation_id
+        assert args[2] is None  # filter_tools
+        # custom_api is passed as 4th argument
+        assert len(args) >= 4
+
+    @patch('app.api.chat.openai_service')
+    def test_chat_endpoint_with_conversation_id(self, mock_service):
+        """Test chat request with conversation_id parameter"""
+        mock_service.chat.return_value = ("Continuing conversation", "existing_conv_id")
+
+        response = client.post(
+            "/api/chat",
+            json={
+                "message": "Continue our chat",
+                "conversation_id": "existing_conv_id"
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "response" in data
+        assert "conversation_id" in data
+        assert data["conversation_id"] == "existing_conv_id"
+
+        # Verify the service was called with conversation_id
+        mock_service.chat.assert_called_once_with(
+            "Continue our chat", "existing_conv_id", None, None
+        )
 
 
 class TestAPIValidation:
