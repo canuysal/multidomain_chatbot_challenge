@@ -121,6 +121,38 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
             with gr.Row():
                 clear_btn = gr.Button("Clear Chat", variant="secondary")
 
+            # Tool selection checkboxes
+            gr.Markdown("### 🛠️ Available Tools")
+            with gr.Row():
+                city_tool = gr.Checkbox(label="🏙️ Cities", value=True)
+                weather_tool = gr.Checkbox(label="🌤️ Weather", value=True)
+                research_tool = gr.Checkbox(label="📚 Research", value=True)
+                product_tool = gr.Checkbox(label="🛍️ Products", value=True)
+
+            # Custom API tool section
+            gr.Markdown("### 🔧 Custom API Tool")
+            with gr.Column():
+                custom_api_enabled = gr.Checkbox(label="Custom API (Only GET Requests)", value=False)
+                with gr.Row():
+                    custom_api_name = gr.Textbox(
+                        label="Tool Name",
+                        value="get_jokes",
+                        placeholder="Enter custom tool name...",
+                        scale=2
+                    )
+                    custom_api_endpoint = gr.Textbox(
+                        label="API Endpoint",
+                        value="https://official-joke-api.appspot.com/jokes/random",
+                        placeholder="https://api.example.com/endpoint",
+                        scale=3
+                    )
+                custom_api_description = gr.Textbox(
+                    label="Description",
+                    value="Get a random joke",
+                    placeholder="Describe what this API does...",
+                    lines=2
+                )
+
             # Function to update session info
             def update_session_info(request: gr.Request):
                 if hasattr(request, 'session_hash'):
