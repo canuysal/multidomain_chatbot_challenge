@@ -22,6 +22,14 @@ A comprehensive AI-powered chatbot that handles multiple domains including city 
 - **Web UI**: Beautiful Gradio interface for interactive chat
 - **REST API**: Complete FastAPI implementation with OpenAPI documentation
 
+## 📱 Screenshots
+
+### Chat Interface with Tool Selection
+![Query Interface](data/query.webp)
+
+### Tools Configuration
+![Tools Configuration](data/tools.webp)
+
 ### 🛡️ Clone and Bootstrap Your Project
 - **Comprehensive Error Handling**: Graceful error recovery and user-friendly messages
 - **Robust Testing**: Unit tests for all components
@@ -62,6 +70,10 @@ cp .env.example .env
 ```
 
 4. **Setup database**
+- If you don't have a local db, sign-up to [Supabase](https://supabase.com)
+- Create a new project and a database
+- On your database dashboard, click **Connect**
+- Copy the **Session pooler** endpoint to DATABASE_URL in your .env file.
 ```bash
 # Bootstrap with sample data
 python database/bootstrap.py
