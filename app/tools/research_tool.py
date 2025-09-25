@@ -240,19 +240,19 @@ class ResearchTool(BaseTool):
 
     def get_tool_name(self) -> str:
         """Return the tool identifier"""
-        return "research"
+        return "search_research"
 
     def get_tool_description(self) -> str:
         """Return tool description"""
-        return "Tool for fetching research information from Semantic Scholar API"
+        return "Search for academic research papers and information on a topic"
 
     def get_openai_function_schema(self) -> Dict[str, Any]:
         """Return OpenAI function schema"""
         return {
             "type": "function",
             "function": {
-                "name": "search_research",
-                "description": "Search for academic research papers and information on a topic",
+                "name": self.get_tool_name(),
+                "description": self.get_tool_description(),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -271,7 +271,7 @@ class ResearchTool(BaseTool):
     def get_function_mapping(self) -> Dict[str, callable]:
         """Return function mapping"""
         return {
-            "search_research": self.search_research
+            self.get_tool_name(): self.search_research
         }
 
 

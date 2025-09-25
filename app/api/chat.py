@@ -9,9 +9,17 @@ openai_service = OpenAIService()
 logger = get_logger('app.api.chat')
 
 
+class CustomTool(BaseModel):
+    name: str
+    endpoint: str
+    description: str
+
+
 class ChatMessage(BaseModel):
     message: str
     conversation_id: Optional[str] = None
+    filter_tools: Optional[List[str]] = None
+    custom_api: Optional[CustomTool] = None
 
 
 class ChatResponse(BaseModel):
@@ -27,6 +35,10 @@ class ClearChatRequest(BaseModel):
 async def chat_endpoint(chat_message: ChatMessage):
     """
     Main chat endpoint for API access
+    filter_tools is an array of tool names to enable, options: city, weather, research, product
+    custom_api is an object with the name, endpoint, and description of the custom API tool to enable
+    if filter_tools is not provided, all tools are enabled
+    set conversation_id to a specific value to use a specific conversation
     """
     request_id = log_request_start(logger, "POST", "/api/chat", {
         "message_length": len(chat_message.message),
@@ -43,7 +55,7 @@ async def chat_endpoint(chat_message: ChatMessage):
             raise HTTPException(status_code=400, detail="Message cannot be empty")
 
         logger.info(f"🔄 Processing chat message via OpenAI service")
-        response, conversation_id = openai_service.chat(chat_message.message, chat_message.conversation_id)
+        response, conversation_id = openai_service.chat(chat_message.message, chat_message.conversation_id, chat_message.filter_tools, chat_message.custom_api)
 
         response_obj = ChatResponse(
             response=response,

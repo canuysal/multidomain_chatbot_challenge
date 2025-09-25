@@ -183,19 +183,19 @@ class WeatherTool(BaseTool):
 
     def get_tool_name(self) -> str:
         """Return the tool identifier"""
-        return "weather"
+        return "get_weather"
 
     def get_tool_description(self) -> str:
         """Return tool description"""
-        return "Tool for fetching weather information from OpenWeatherMap API"
+        return "Get current weather conditions for a specific city"
 
     def get_openai_function_schema(self) -> Dict[str, Any]:
         """Return OpenAI function schema"""
         return {
             "type": "function",
             "function": {
-                "name": "get_weather",
-                "description": "Get current weather conditions for a specific city",
+                "name": self.get_tool_name(),
+                "description": self.get_tool_description(),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -214,7 +214,7 @@ class WeatherTool(BaseTool):
     def get_function_mapping(self) -> Dict[str, callable]:
         """Return function mapping"""
         return {
-            "get_weather": self.get_weather
+            self.get_tool_name(): self.get_weather
         }
 
 

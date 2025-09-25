@@ -248,19 +248,19 @@ class ProductTool(BaseTool):
 
     def get_tool_name(self) -> str:
         """Return the tool identifier"""
-        return "product"
+        return "find_products"
 
     def get_tool_description(self) -> str:
         """Return tool description"""
-        return "Tool for searching products in the database"
+        return "Search for products in the database by name, description, category, or brand"
 
     def get_openai_function_schema(self) -> Dict[str, Any]:
         """Return OpenAI function schema"""
         return {
             "type": "function",
             "function": {
-                "name": "find_products",
-                "description": "Search for products in the database by name, description, category, or brand",
+                "name": self.get_tool_name(),
+                "description": self.get_tool_description(),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -279,7 +279,7 @@ class ProductTool(BaseTool):
     def get_function_mapping(self) -> Dict[str, callable]:
         """Return function mapping"""
         return {
-            "find_products": self.find_products
+            self.get_tool_name(): self.find_products
         }
 
 

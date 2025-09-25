@@ -2,6 +2,7 @@ import gradio as gr
 import uuid
 from app.services.openai_service import OpenAIService
 from app.core.logging_config import get_logger
+from app.api.chat import CustomTool
 
 
 class ChatInterface:
@@ -9,7 +10,10 @@ class ChatInterface:
         self.openai_service = OpenAIService()
         self.logger = get_logger('app.chat.gradio')
 
-    def chat_function(self, message: str, history: list, request: gr.Request) -> tuple:
+    def chat_function(self, message: str, history: list, city_enabled: bool, weather_enabled: bool,
+                     research_enabled: bool, product_enabled: bool, custom_api_enabled: bool,
+                     custom_api_name: str, custom_api_endpoint: str, custom_api_description: str,
+                     request: gr.Request) -> tuple:
         """Process user message and return response for Gradio (using messages format)"""
         # Get or create conversation_id for this session
         if hasattr(request, 'session_hash'):
@@ -26,9 +30,30 @@ class ChatInterface:
             return history, ""
 
         try:
+            # Create filter_tools array based on enabled checkboxes
+            filter_tools = []
+            if city_enabled:
+                filter_tools.append('city')
+            if weather_enabled:
+                filter_tools.append('weather')
+            if research_enabled:
+                filter_tools.append('research')
+            if product_enabled:
+                filter_tools.append('product')
+
+            # Create custom API tool if enabled
+            custom_api = None
+            if custom_api_enabled and custom_api_name and custom_api_endpoint:
+                custom_api = CustomTool(
+                    name=custom_api_name,
+                    endpoint=custom_api_endpoint,
+                    description=custom_api_description
+                )
+
             # Get response from OpenAI service
             self.logger.info(f"🔄 Processing message via OpenAI service (conversation: {conversation_id})")
-            response, _ = self.openai_service.chat(message, conversation_id)
+            self.logger.debug(f"🛠️ Filter tools: {filter_tools}, custom_api: {'enabled' if custom_api else 'disabled'}")
+            response, _ = self.openai_service.chat(message, conversation_id, filter_tools, custom_api)
 
             # Update history using messages format
             history.append({"role": "user", "content": message})
@@ -132,7 +157,7 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
             # Custom API tool section
             gr.Markdown("### 🔧 Custom API Tool")
             with gr.Column():
-                custom_api_enabled = gr.Checkbox(label="Custom API (Only GET Requests)", value=False)
+                custom_api_enabled = gr.Checkbox(label="Custom API (Only GET Requests, 30s timeout)", value=True)
                 with gr.Row():
                     custom_api_name = gr.Textbox(
                         label="Tool Name",
@@ -170,13 +195,15 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
             # Set up event handlers
             send_btn.click(
                 fn=self.chat_function,
-                inputs=[msg, chatbot],
+                inputs=[msg, chatbot, city_tool, weather_tool, research_tool, product_tool,
+                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description],
                 outputs=[chatbot, msg]
             )
 
             msg.submit(
                 fn=self.chat_function,
-                inputs=[msg, chatbot],
+                inputs=[msg, chatbot, city_tool, weather_tool, research_tool, product_tool,
+                       custom_api_enabled, custom_api_name, custom_api_endpoint, custom_api_description],
                 outputs=[chatbot, msg]
             )
 

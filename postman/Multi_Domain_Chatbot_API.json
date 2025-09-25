@@ -755,6 +755,77 @@
       ]
     },
     {
+      "name": "Custom API Tool Tests",
+      "item": [
+        {
+          "name": "Test Custom Jokes API Tool",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Tell me a joke\",\n    \"conversation_id\": \"postman_test\",\n    \"filter_tools\": [\"city\", \"weather\", \"research\", \"product\"],\n    \"custom_api\": {\n        \"name\": \"get_jokes\",\n        \"endpoint\": \"https://official-joke-api.appspot.com/jokes/random\",\n        \"description\": \"Get a random joke\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test with Only Custom API Tool",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Get me a joke please\",\n    \"conversation_id\": \"postman_test\",\n    \"filter_tools\": [],\n    \"custom_api\": {\n        \"name\": \"get_jokes\",\n        \"endpoint\": \"https://official-joke-api.appspot.com/jokes/random\",\n        \"description\": \"Get a random joke\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test with Filtered Tools",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Can you check the weather in London?\",\n    \"conversation_id\": \"postman_test\",\n    \"filter_tools\": [\"product\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "chat"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Load Testing",
       "item": [
         {

@@ -35,7 +35,7 @@ class ToolRegistry:
         self.logger.debug(f"🔍 Discovering tools in: {tools_dir}")
 
         # Skip base directory and __pycache__
-        skip_dirs = {'base', '__pycache__', 'registry.py', '__init__.py'}
+        skip_dirs = {'base', '__pycache__', 'registry.py', '__init__.py', 'custom_api_tool.py'}
 
         discovered_count = 0
         for py_file in tools_dir.glob("*.py"):

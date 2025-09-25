@@ -151,19 +151,19 @@ class CityTool(BaseTool):
 
     def get_tool_name(self) -> str:
         """Return the tool identifier"""
-        return "city"
+        return "get_city_info"
 
     def get_tool_description(self) -> str:
         """Return tool description"""
-        return "Tool for fetching city information from Wikipedia API"
+        return "Get general information about a city using Wikipedia"
 
     def get_openai_function_schema(self) -> Dict[str, Any]:
         """Return OpenAI function schema"""
         return {
             "type": "function",
             "function": {
-                "name": "get_city_info",
-                "description": "Get general information about a city using Wikipedia",
+                "name": self.get_tool_name(),
+                "description": self.get_tool_description(),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -182,7 +182,7 @@ class CityTool(BaseTool):
     def get_function_mapping(self) -> Dict[str, callable]:
         """Return function mapping"""
         return {
-            "get_city_info": self.get_city_info
+            self.get_tool_name(): self.get_city_info
         }
 
 

@@ -5,6 +5,7 @@ from openai import OpenAI
 from app.core.config import get_settings
 from app.core.logging_config import get_logger, log_request_start, log_request_end, log_tool_call, log_tool_result, log_error_with_context
 from app.tools.registry import get_tool_registry
+from app.tools.custom_api_tool import CustomAPITool
 
 
 class OpenAIService:
@@ -42,11 +43,34 @@ class OpenAIService:
         """Get available functions from the tool registry"""
         return self.tool_registry.get_available_functions()
 
-    def get_tool_definitions(self) -> List[Dict[str, Any]]:
-        """Get tool definitions from the tool registry"""
-        return self.tool_registry.get_openai_tool_definitions()
+    def get_tool_definitions(self, filter_tools=None) -> List[Dict[str, Any]]:
+        """Get tool definitions from the tool registry, filtered by filter_tools array"""
+        all_tools = self.tool_registry.get_openai_tool_definitions()
 
-    def chat(self, user_message: str, conversation_id: Optional[str] = None) -> tuple[str, str]:
+        # If no filter_tools is provided, return all tools (default behavior)
+        if filter_tools is None:
+            return all_tools
+
+        # Filter tools based on the array of tool names
+        filtered_tools = []
+        tool_name_mapping = {
+            'city': 'get_city_info',
+            'weather': 'get_weather',
+            'research': 'search_research',
+            'product': 'find_products'
+        }
+
+        for tool_type in filter_tools:
+            if tool_type in tool_name_mapping:
+                function_name = tool_name_mapping[tool_type]
+                for tool in all_tools:
+                    if tool.get('function', {}).get('name') == function_name:
+                        filtered_tools.append(tool)
+                        break
+
+        return filtered_tools
+
+    def chat(self, user_message: str, conversation_id: Optional[str] = None, filter_tools=None, custom_api=None) -> tuple[str, str]:
         """Process user message and return AI response with multi-turn tool calling"""
         # Generate conversation_id if not provided
         if conversation_id is None:
@@ -72,26 +96,58 @@ class OpenAIService:
                 "content": user_message
             })
 
-            # Create system message
-            system_message = {
-                "role": "system",
-                "content": """You are a helpful chatbot that can assist users with:
-                - Information about cities (using Wikipedia)
-                - Weather information for cities
-                - Research topics and academic information
-                - Product searches from our database
+            # Setup custom tool if provided
+            custom_tool_instance = None
+            custom_tool_functions = {}
 
-                Always greet users warmly and be helpful. Use the available functions when appropriate to provide accurate information.
-                If you don't have the information, inform the user that you don't have the information and try to suggest other ways to get the information.
-                If the function returns an error, inform the user about the nature of the error, e.g. rate limit, timeout, internal server error, etc.
-                While using get_city_info function, add the url of the wikipedia page to response.
-                """
-            }
+            if custom_api:
+                self.logger.info(f"🔧 Creating custom API tool: {custom_api.name} -> {custom_api.endpoint}")
+                custom_tool_instance = CustomAPITool(custom_api.name, custom_api.endpoint, custom_api.description)
+                custom_tool_functions = custom_tool_instance.get_function_mapping()
+                self.logger.debug(f"🛠️ Custom tool functions: {list(custom_tool_functions.keys())}")
 
             # Multi-turn loop for tool calling
             max_turns = 10  # Prevent infinite loops
             turn = 0
             final_message = ""
+
+            # Call OpenAI with tool calling - get filtered tools and add custom tool if available
+            tool_definitions = self.get_tool_definitions(filter_tools)
+            self.logger.info(f"🛠️ Enabled tools: {[tool.get('function', {}).get('name', '') for tool in tool_definitions]}")
+
+            # Check which tools are enabled
+            enabled_tools = [tool.get('function', {}).get('name', '') for tool in tool_definitions]
+
+            city_status = "" if "get_city_info" in enabled_tools else " (Currently Disabled)"
+            weather_status = "" if "get_weather" in enabled_tools else " (Currently Disabled)"
+            research_status = "" if "search_research" in enabled_tools else " (Currently Disabled)"
+            product_status = "" if "find_products" in enabled_tools else " (Currently Disabled)"
+
+            # Add custom tool status if available
+            custom_tool_line = ""
+            if custom_tool_instance:
+                custom_tool_line = f"\n                - {custom_api.description}"
+
+            # Create system message
+            system_message = {
+                "role": "system",
+                "content": f"""
+You are a helpful chatbot that can assist users with:
+    - Information about cities (using Wikipedia){city_status}
+    - Weather information for cities{weather_status}
+    - Research topics and academic information{research_status}
+    - Product searches from our database{product_status}
+    {custom_tool_line}
+
+Always greet users warmly and be helpful. Use the available functions when appropriate to provide accurate information.
+If you don't have the information, inform the user that you don't have the information and try to suggest other ways to get the information.
+If the function returns an error, inform the user about the nature of the error, e.g. rate limit, timeout, internal server error, etc.
+While using get_city_info function, add the url of the wikipedia page to response.
+If the tool you need to use is not enabled, inform the user that the tool is not enabled and suggest to activate it in the tool selection section.
+"""
+            }
+
+            self.logger.info(f"System message: {json.dumps(system_message, indent=2)}")
 
             while turn < max_turns:
                 turn += 1
@@ -101,8 +157,11 @@ class OpenAIService:
                 messages = [system_message] + conversation_history
                 self.logger.debug(f"📤 Sending {len(messages)} messages to OpenAI")
 
-                # Call OpenAI with tool calling
-                tool_definitions = self.get_tool_definitions()
+                # Add custom tool if available
+                if custom_tool_instance:
+                    custom_schema = custom_tool_instance.get_openai_function_schema()
+                    tool_definitions.append(custom_schema)
+
                 self.logger.info(f"🤖 Calling OpenAI API ({self.model}) - Turn {turn} with {len(tool_definitions)} tools")
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -139,6 +198,10 @@ class OpenAIService:
 
                     # Execute each tool call
                     available_functions = self.get_available_functions()
+
+                    # Add custom tool functions if available
+                    if custom_tool_functions:
+                        available_functions.update(custom_tool_functions)
 
                     for tool_call in message.tool_calls:
                         function_name = tool_call.function.name
