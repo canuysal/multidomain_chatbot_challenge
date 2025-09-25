@@ -8,7 +8,18 @@ from app.tools.registry import get_tool_registry
 
 
 class OpenAIService:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(OpenAIService, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if OpenAIService._initialized:
+            return
+
         settings = get_settings()
         self.client = OpenAI(
             api_key=settings.llm_api_key,
@@ -24,6 +35,8 @@ class OpenAIService:
         self.logger.info(f"🤖 OpenAI service initialized with model: {self.model}")
         self.logger.info(f"🔧 Tool registry loaded: {registry_info['total_active']}/{registry_info['total_discovered']} tools active")
         self.logger.debug(f"🛠️ Active tools: {registry_info['active_tools']}")
+
+        OpenAIService._initialized = True
 
     def get_available_functions(self) -> Dict[str, Any]:
         """Get available functions from the tool registry"""
