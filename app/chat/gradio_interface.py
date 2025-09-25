@@ -8,12 +8,18 @@ class ChatInterface:
     def __init__(self):
         self.openai_service = OpenAIService()
         self.logger = get_logger('app.chat.gradio')
-        self.conversation_id = str(uuid.uuid4())  # Generate a unique conversation ID for this Gradio session
 
-    def chat_function(self, message: str, history: list) -> tuple:
+    def chat_function(self, message: str, history: list, request: gr.Request) -> tuple:
         """Process user message and return response for Gradio (using messages format)"""
+        # Get or create conversation_id for this session
+        if hasattr(request, 'session_hash'):
+            conversation_id = f"gradio_{request.session_hash}"
+        else:
+            conversation_id = f"gradio_{str(uuid.uuid4())}"
+
         self.logger.info("🎨 Gradio chat request received")
         self.logger.debug(f"📝 Message: {message[:100]}...")
+        self.logger.debug(f"🔑 Session conversation_id: {conversation_id}")
 
         if not message.strip():
             self.logger.warning("❌ Empty message in Gradio interface")
@@ -21,8 +27,8 @@ class ChatInterface:
 
         try:
             # Get response from OpenAI service
-            self.logger.info(f"🔄 Processing message via OpenAI service (conversation: {self.conversation_id})")
-            response, _ = self.openai_service.chat(message, self.conversation_id)
+            self.logger.info(f"🔄 Processing message via OpenAI service (conversation: {conversation_id})")
+            response, _ = self.openai_service.chat(message, conversation_id)
 
             # Update history using messages format
             history.append({"role": "user", "content": message})
@@ -40,13 +46,17 @@ class ChatInterface:
             history.append({"role": "assistant", "content": error_response})
             return history, ""
 
-    def clear_chat(self):
+    def clear_chat(self, request: gr.Request):
         """Clear both Gradio and OpenAI conversation history"""
-        self.logger.info(f"🧹 Gradio chat clear requested (conversation: {self.conversation_id})")
-        self.openai_service.clear_conversation(self.conversation_id)
-        # Generate a new conversation ID for the fresh start
-        self.conversation_id = str(uuid.uuid4())
-        self.logger.info(f"🆕 New conversation ID generated: {self.conversation_id}")
+        # Get conversation_id for this session
+        if hasattr(request, 'session_hash'):
+            conversation_id = f"gradio_{request.session_hash}"
+        else:
+            conversation_id = f"gradio_{str(uuid.uuid4())}"
+
+        self.logger.info(f"🧹 Gradio chat clear requested (conversation: {conversation_id})")
+        self.openai_service.clear_conversation(conversation_id)
+        self.logger.info(f"✅ Conversation {conversation_id} cleared")
 
         # Return welcome message when clearing chat (using messages format)
         welcome_message = """👋 **Welcome back to the Multi-Domain AI Chatbot!**
@@ -85,7 +95,9 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
         with gr.Blocks(title="AI Chatbot", theme=gr.themes.Soft()) as interface:
             gr.Markdown("# 🤖 Multi-Domain AI Chatbot")
             gr.Markdown("Ask me about cities, weather, research topics, or products!")
-            gr.Markdown(f"**Session ID:** `{self.conversation_id}`", elem_classes="session-info")
+
+            # Session info will be updated dynamically
+            session_info = gr.Markdown("**Session ID:** `Connecting...`", elem_classes="session-info")
 
             chatbot = gr.Chatbot(
                 value=[{"role": "assistant", "content": welcome_message}],
@@ -109,6 +121,20 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
             with gr.Row():
                 clear_btn = gr.Button("Clear Chat", variant="secondary")
 
+            # Function to update session info
+            def update_session_info(request: gr.Request):
+                if hasattr(request, 'session_hash'):
+                    conversation_id = f"gradio_{request.session_hash}"
+                else:
+                    conversation_id = f"gradio_{str(uuid.uuid4())}"
+                return f"**Session ID:** `{conversation_id}`"
+
+            # Update session info on page load
+            interface.load(
+                fn=update_session_info,
+                outputs=session_info
+            )
+
             # Set up event handlers
             send_btn.click(
                 fn=self.chat_function,
@@ -124,7 +150,6 @@ Feel free to ask me anything! I can handle multiple topics in a single conversat
 
             clear_btn.click(
                 fn=self.clear_chat,
-                inputs=None,
                 outputs=chatbot
             )
 
